@@ -1,0 +1,10 @@
+Hello world 123
+C++ is fun!
+Test sentence 456
+Visual Studio 2022
+Programming is 789 great
+Special  *chars* here
+Numbers 101 and 202
+UpperCase Word
+lowercase word
+End of file 999

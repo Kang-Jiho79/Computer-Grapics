@@ -117,6 +117,56 @@ void transposeprocession(int p[][4])
 	printprocession(result);
 }
 
+void findmin(int p[][4], int& min)
+{
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			if (p[i][j] < min) {
+				min = p[i][j];
+			}
+		}
+	}
+}
+
+void findmax(int p[][4], int& max)
+{
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			if (p[i][j] > max) {
+				max = p[i][j];
+			}
+		}
+	}
+}
+
+void subminprocession(int p[][4])
+{
+	int min;
+	findmin(p, min);
+	int result[4][4];
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			result[i][j] = p[i][j] - min;
+		}
+	}
+	cout << "최소값으로 뺀 결과" << endl;
+	printprocession(result);
+}
+
+void addmaxprocession(int p[][4])
+{
+	int max;
+	findmax(p, max);
+	int result[4][4];
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			result[i][j] = p[i][j] + max;
+		}
+	}
+	cout << "최대값으로 더한 결과" << endl;
+	printprocession(result);
+}
+
 int main()
 {
 	srand((unsigned)time(NULL));
@@ -154,10 +204,33 @@ int main()
 			determinantprocession(p2);
 		}
 		else if (command == 't') {
+			cout << "첫 번째 행렬의 ";
+			transposeprocession(p1);
+			cout << endl;
+			cout << "두 번째 행렬의 ";
+			transposeprocession(p2);
 		}
 		else if (command == 'e') {
+			if (!submin) {
+				subminprocession(p1);
+				cout << endl;
+				subminprocession(p2);
+				submin = true;
+			}
+			else {
+				cout << "이미 최소값으로 뺀 상태입니다." << endl;
+			}
 		}
 		else if (command == 'f') {
+			if (!addmax) {
+				addmaxprocession(p1);
+				cout << endl;
+				addmaxprocession(p2);
+				addmax = true;
+			}
+			else {
+				cout << "이미 최대값으로 더한 상태입니다." << endl;
+			}
 		}
 		else if (command >= '0' && command <= '9') {
 			int num = command - '0';
