@@ -82,7 +82,7 @@ void checkMatch(Board board[5][5], char pos1[],char pos2[],int& score) {
 		board[y2][x2].matched = true;
         for (int i = 0; i < 5; ++i)
             for (int j = 0; j < 5; ++j)
-                if (board[i][j].value == board[y2][x2].value) {
+                if (board[i][j].value == board[y2][x2].value && (i != y2 && j != x2)) {
                     board[i][j].matched = true;
                     board[i][j].value = toupper(board[i][j].value);
                     board[y2][x2].value = toupper(board[y2][x2].value);
@@ -145,13 +145,13 @@ int main() {
     int count = 0, score = 0;
     fillBoard(board, count, score);
     while (true) {
-		char command;
+		string command;
 		cout << "남은 기회 : " << count << ", 점수 : " << score << endl;
         printBoard(board);
 		cout << "명령어 : ";
 		cin >> command;
-		if (command == 'q') break;
-        else if (command == 'c') {
+		if (command == "q") break;
+        else if (command == "c") {
             string s1, s2;
             cout << "좌표입력 : ";
             cin >> s1 >> s2;
@@ -165,10 +165,10 @@ int main() {
             char pos2[2] = { s2[0], s2[1] };
             checkBoard(board, pos1, pos2, count, score);
         }
-        else if (command == 'r') {
+        else if (command == "r") {
             fillBoard(board, count, score);
         }
-        else if (command == 'h') {
+        else if (command == "h") {
 			hintBoard(board);
         }
         else {
