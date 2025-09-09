@@ -60,7 +60,7 @@ void printboard(Board board[MaxBoardSize][MaxBoardSize], int boardWidth, int boa
 	}
 }
 
-void moveplayer (Board board[MaxBoardSize][MaxBoardSize], int x, int y, int playerx, int playery) {
+void moveplayer (Board board[MaxBoardSize][MaxBoardSize], int x, int y, int& playerx, int& playery) {
 	int newx = playerx + x;
 	int newy = playery + y;
 	if (newx < 0 || newx >= MaxBoardSize || newy < 0 || newy >= MaxBoardSize) {
@@ -72,6 +72,8 @@ void moveplayer (Board board[MaxBoardSize][MaxBoardSize], int x, int y, int play
 	board[playery][playerx].type = 0;
 	board[playery][playerx].value++;
 	board[newy][newx].type = 1;
+	playerx = newx;
+	playery = newy;
 }
 
 int main()
@@ -82,16 +84,16 @@ int main()
 	while (true) {
 		char command;
 		printboard(board, MaxBoardSize, MaxBoardSize);
-		cout << "명령어 입력 (w/a/s/d : 이동, q : 종료) : ";
 		command = _getch();
 		if (command == 'q') break;
 		else if (command == 'w') moveplayer(board, 0, -1, playerx, playery);
 		else if (command == 'a') moveplayer(board, -1, 0, playerx, playery);
 		else if (command == 's') moveplayer(board, 0, 1, playerx, playery);
 		else if (command == 'd') moveplayer(board, 1, 0, playerx, playery);
-		else if (command == '\n') {
+		else if (command == 'r') {
 			setting(board);
 			playerx = 0, playery = 0;
 		}
+		system("cls");
 	}
 }
