@@ -133,7 +133,6 @@ GLvoid Mouse(int button, int state, int x, int y)
 						rectangles[i].y += 0.05f;
 						rectangles[i].w -= 0.1f;
 						rectangles[i].h -= 0.1f;
-						printf("Rectangle %d resized to (%f, %f, %f, %f)\n", i, rectangles[i].x, rectangles[i].y, rectangles[i].w, rectangles[i].h);
 						break;
 					}
 				}
