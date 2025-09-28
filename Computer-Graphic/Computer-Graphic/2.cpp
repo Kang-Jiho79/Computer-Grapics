@@ -9,7 +9,7 @@ GLvoid Keyboard(unsigned char key, int x, int y);
 GLvoid TimerFunction(int value);
 GLvoid Mouse(int button, int state, int x, int y);
 
-GLclampf backgroundColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+GLclampf backgroundColor[4][4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 bool SetTime = false;
 
@@ -66,9 +66,11 @@ void main(int argc, char** argv)
 
 GLvoid drawScene()
 {
-	glClearColor(backgroundColor[0], backgroundColor[1], backgroundColor[2], backgroundColor[3]);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	for (int i = 0; i < 4; i++) {
+		glColor3f(backgroundColor[i][0], backgroundColor[i][1], backgroundColor[i][2]);
+		glRectf(i % 2 - 1.0f, (i < 2 ? 0.0f : -1.0f), i % 2, (i < 2 ? 1.0f : 0.0f));
 		glColor3f(rectangles[i].color[0], rectangles[i].color[1], rectangles[i].color[2]);
 		glRectf(rectangles[i].x, rectangles[i].y, rectangles[i].x + rectangles[i].w, rectangles[i].y + rectangles[i].h);
 	}
@@ -112,9 +114,9 @@ GLvoid Mouse(int button, int state, int x, int y)
 					break;
 				}
 				else {
-					backgroundColor[0] = getRandomFloat();
-					backgroundColor[1] = getRandomFloat();
-					backgroundColor[2] = getRandomFloat();
+					backgroundColor[i][0] = getRandomFloat();
+					backgroundColor[i][1] = getRandomFloat();
+					backgroundColor[i][2] = getRandomFloat();
 					break;
 				}
 			}

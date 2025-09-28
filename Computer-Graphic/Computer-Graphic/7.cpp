@@ -59,14 +59,12 @@ public:
 		isMatched = false;
 	}
 
-	// 우측 플레이어 블록 생성 - 격자 형태로 배치
 	void makePlayerRectangle(float targetW, float targetH, int index) {
 		color[0] = getRandomcolor();
 		color[1] = getRandomcolor();
 		color[2] = getRandomcolor();
 		color[3] = 1.0f;
 
-		// 격자 형태로 배치 (3x4 또는 2x5)
 		int cols = 2; // 열 개수
 		int rows = (maxrectcount + cols - 1) / cols; // 행 개수
 
@@ -97,8 +95,7 @@ public:
 		isTarget = false;
 	}
 
-	// 다른 블록과 가까운지 확인 (매칭 판정)
-	bool isNear(const rect& other, float tolerance = 0.1f) {
+	bool isNear(const rect& other, float tolerance = 0.01f) {
 		if (!exist || !other.exist) return false;
 
 		float centerX1 = x + w / 2;
@@ -125,16 +122,16 @@ bool gameComplete = false;
 void checkMatching() {
 	matchedCount = 0;
 
-	// 모든 플레이어 블록의 매칭 상태 초기화
 	for (int i = 0; i < maxrectcount; i++) {
 		playerBlocks[i].isMatched = false;
 	}
 
-	// 각 플레이어 블록에 대해 목표 블록과 매칭 확인
 	for (int i = 0; i < maxrectcount; i++) {
 		if (!playerBlocks[i].exist) continue;
 		if (playerBlocks[i].isNear(targets[i])) {
 			playerBlocks[i].isMatched = true;
+			playerBlocks[i].x = targets[i].x + (targets[i].w - playerBlocks[i].w) / 2;
+			playerBlocks[i].y = targets[i].y + (targets[i].h - playerBlocks[i].h) / 2;
 			matchedCount++;
 		}
 	}
@@ -264,28 +261,22 @@ GLvoid Mouse(int button, int state, int x, int y)
 
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
 		draggingRect = -1;
+		for (int i = 0; i < maxrectcount; i++) {
+			if (playerBlocks[i].exist &&
+				x_ndc >= playerBlocks[i].x && x_ndc <= playerBlocks[i].x + playerBlocks[i].w &&
+				y_ndc >= playerBlocks[i].y && y_ndc <= playerBlocks[i].y + playerBlocks[i].h &&
+				!playerBlocks[i].isMatched) {
 
-		// 우측 영역의 플레이어 블록만 드래그 가능
-		if (x_ndc > 0.0f) {
-			for (int i = 0; i < maxrectcount; i++) {
-				if (playerBlocks[i].exist &&
-					x_ndc >= playerBlocks[i].x && x_ndc <= playerBlocks[i].x + playerBlocks[i].w &&
-					y_ndc >= playerBlocks[i].y && y_ndc <= playerBlocks[i].y + playerBlocks[i].h) {
-
-					draggingRect = i;
-					isDragging = true;
-					lastX = x_ndc;
-					lastY = y_ndc;
-					printf("블록 %d 드래그 시작 위치: (%.2f, %.2f)\n", i, x_ndc, y_ndc);
-					break;
-				}
+				draggingRect = i;
+				isDragging = true;
+				lastX = x_ndc;
+				lastY = y_ndc;
+				break;
 			}
 		}
 	}
 	else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
 		if (draggingRect != -1) {
-			printf("블록 % d 드래그 종료 위치 : (% .2f, % .2f)\n", draggingRect,
-				playerBlocks[draggingRect].x, playerBlocks[draggingRect].y);
 			isDragging = false;
 			draggingRect = -1;
 		}
@@ -301,7 +292,7 @@ GLvoid Motion(int x, int y)
 
 		float deltaX = x_ndc - lastX;
 		float deltaY = y_ndc - lastY;
-
+		if (playerBlocks[draggingRect].isMatched) return;
 		playerBlocks[draggingRect].x += deltaX;
 		playerBlocks[draggingRect].y += deltaY;
 

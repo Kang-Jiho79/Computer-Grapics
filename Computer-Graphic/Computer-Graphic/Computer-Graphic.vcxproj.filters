@@ -13,28 +13,37 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="소스 파일\1. OpenGL Basic">
+      <UniqueIdentifier>{b35d951c-c05a-4fe5-948e-806775b66061}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\2. GLSL Basic">
+      <UniqueIdentifier>{47c244eb-1309-47e0-9c02-e0e8fa3c5f4e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="1.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\1. OpenGL Basic</Filter>
     </ClCompile>
     <ClCompile Include="2.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\1. OpenGL Basic</Filter>
     </ClCompile>
     <ClCompile Include="3.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\1. OpenGL Basic</Filter>
     </ClCompile>
     <ClCompile Include="4.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\1. OpenGL Basic</Filter>
     </ClCompile>
     <ClCompile Include="5.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\1. OpenGL Basic</Filter>
     </ClCompile>
     <ClCompile Include="6.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\1. OpenGL Basic</Filter>
     </ClCompile>
     <ClCompile Include="7.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\1. OpenGL Basic</Filter>
+    </ClCompile>
+    <ClCompile Include="8.cpp">
+      <Filter>소스 파일\2. GLSL Basic</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

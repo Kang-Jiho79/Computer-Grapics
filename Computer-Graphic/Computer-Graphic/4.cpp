@@ -140,27 +140,27 @@ GLvoid Reshape(int w, int h)
 GLvoid Keyboard(unsigned char key, int x, int y)
 {
     switch (key) {
-    case '1': case 'a': // 대각선 이동
+    case '1': case 'a': 
         for (int i = 0; i < maxrectcount; i++)
             if (rectangles[i].exist) rectangles[i].animType = DIAGONAL;
         animationEnabled = true;
         break;
-    case '2': case 'b': // 지그재그 이동
+    case '2': case 'b': 
         for (int i = 0; i < maxrectcount; i++)
             if (rectangles[i].exist) rectangles[i].animType = ZIGZAG;
         animationEnabled = true;
         break;
-    case '3': case 'c': // 크기 변화
+    case '3': case 'c': 
         for (int i = 0; i < maxrectcount; i++)
             if (rectangles[i].exist) rectangles[i].animType = SIZE_ANIM;
         animationEnabled = true;
         break;
-    case '4': case 'd': // 색상 변화
+    case '4': case 'd': 
         for (int i = 0; i < maxrectcount; i++)
             if (rectangles[i].exist) rectangles[i].animType = COLOR;
         animationEnabled = true;
         break;
-    case '5': case 'e': // 따라하기
+    case '5': case 'e': 
         if (rectCount > 0) {
             followIndex = rand() % rectCount;
             for (int i = 0; i < maxrectcount; i++)
@@ -168,24 +168,24 @@ GLvoid Keyboard(unsigned char key, int x, int y)
             animationEnabled = true;
         }
         break;
-    case 's': // 모든 애니메이션 멈춤
+    case 's': 
         for (int i = 0; i < maxrectcount; i++)
             if (rectangles[i].exist) rectangles[i].animType = NONE;
         animationEnabled = false;
         break;
-    case 'm': // 원래 위치로 이동
+    case 'm': 
         for (int i = 0; i < maxrectcount; i++)
             if (rectangles[i].exist) {
                 rectangles[i].x = rectangles[i].orig_x;
                 rectangles[i].y = rectangles[i].orig_y;
             }
         break;
-    case 'r': // 전체 삭제
+    case 'r': 
         for (int i = 0; i < maxrectcount; i++)
             rectangles[i].init();
         rectCount = 0;
         break;
-    case 'q': // 종료
+    case 'q': 
         glutLeaveMainLoop();
         break;
     }
@@ -200,7 +200,6 @@ GLvoid TimerFunction(int value) {
             case DIAGONAL:
                 rectangles[i].x += rectangles[i].vx;
                 rectangles[i].y += rectangles[i].vy;
-                // 벽에 닿으면 방향 반전
                 if (rectangles[i].x < -1.0f || rectangles[i].x + rectangles[i].w > 1.0f)
                     rectangles[i].vx *= -1;
                 if (rectangles[i].y < -1.0f || rectangles[i].y + rectangles[i].h > 1.0f)
@@ -217,9 +216,8 @@ GLvoid TimerFunction(int value) {
             case SIZE_ANIM:
                 rectangles[i].w += 0.005f * rectangles[i].sizeDir;
                 rectangles[i].h += 0.005f * rectangles[i].sizeDir;
-                if (rectangles[i].w > 0.4f || rectangles[i].w < 0.1f)
-                    rectangles[i].sizeDir *= -1;
-                if (rectangles[i].h > 0.4f || rectangles[i].h < 0.1f)
+				printf("%f %f\n", rectangles[i].w, rectangles[i].h);
+                if (rectangles[i].w > 0.4f || rectangles[i].w  < 0.1f || rectangles[i].h > 0.4f || rectangles[i].h < 0.1f)
                     rectangles[i].sizeDir *= -1;
                 break;
             case COLOR:
@@ -229,7 +227,6 @@ GLvoid TimerFunction(int value) {
                 break;
             case FOLLOW:
                 if (followIndex >= 0 && followIndex < maxrectcount && rectangles[followIndex].exist) {
-                    // 따라하기: 앞 사각형의 위치를 따라감
                     float tx = rectangles[followIndex].x;
                     float ty = rectangles[followIndex].y;
                     rectangles[i].x += (tx - rectangles[i].x) * 0.05f;

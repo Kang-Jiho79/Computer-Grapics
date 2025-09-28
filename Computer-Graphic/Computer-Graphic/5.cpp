@@ -80,16 +80,14 @@ bool isColliding(const rect& rect1, const rect& rect2) {
         rect1.y + rect1.h > rect2.y);
 }
 
-// 특정 사각형과 배열의 다른 모든 사각형과의 충돌을 확인하는 함수
 int checkCollisionWithAll(const rect& targetRect, const rect rectangles[], int arraySize, int excludeIndex = -1) {
     for (int i = 0; i < arraySize; i++) {
-        // 자기 자신과는 비교하지 않음
         if (i == excludeIndex) {
             continue;
         }
 
         if (isColliding(targetRect, rectangles[i])) {
-            return i; // 충돌한 사각형의 인덱스 반환
+            return i; 
         }
     }
     return -1; // 충돌하지 않음
@@ -145,7 +143,7 @@ GLvoid drawScene()
         }
     }
     if (isDragging) {
-		glColor3b(erase.color[0], erase.color[1], erase.color[2]);
+		glColor3f(erase.color[0], erase.color[1], erase.color[2]);
 		glRectf(erase.x, erase.y, erase.x + erase.w, erase.y + erase.h);
     }
     glutSwapBuffers();
@@ -195,9 +193,9 @@ GLvoid Mouse(int button, int state, int x, int y)
     }
     else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
         isDragging = false;
-		erase.color[0] = 1.0f;
-		erase.color[1] = 1.0f;
-		erase.color[2] = 1.0f;
+		erase.color[0] = 0.0f;
+		erase.color[1] = 0.0f;
+		erase.color[2] = 0.0f;
         glutPostRedisplay();
     }
     else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {

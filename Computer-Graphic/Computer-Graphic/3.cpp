@@ -83,8 +83,39 @@ void crashrect(int dragingrect)
 				rectangles[i].color[0] = getRandomcolor();
 				rectangles[i].color[1] = getRandomcolor();
 				rectangles[i].color[2] = getRandomcolor();
-				rectangles[i].w = fabs(getRandomfloat() / 2) + 0.1;
-				rectangles[i].h = fabs(getRandomfloat() / 2) + 0.1;
+				if (rectangles[i].x > rectangles[dragingrect].x) {
+					if (rectangles[i].x + rectangles[i].w > rectangles[dragingrect].x + rectangles[dragingrect].w) {
+						rectangles[i].w = (rectangles[i].x + rectangles[i].w) - rectangles[dragingrect].x;
+					}
+					else {
+						rectangles[i].w = rectangles[dragingrect].w;
+					}
+					rectangles[i].x = rectangles[dragingrect].x;
+				}
+				else {
+					if (rectangles[i].x + rectangles[i].w > rectangles[dragingrect].x + rectangles[dragingrect].w) {
+						rectangles[i].w = rectangles[i].w;
+					}
+					else {
+						rectangles[i].w = (rectangles[dragingrect].x + rectangles[dragingrect].w) - rectangles[i].x;
+					}
+				}
+				if (rectangles[i].y > rectangles[dragingrect].y) {
+					if (rectangles[i].y + rectangles[i].h > rectangles[dragingrect].y + rectangles[dragingrect].h) {
+						rectangles[i].h = (rectangles[i].y + rectangles[i].h) - rectangles[dragingrect].y;
+					}
+					else
+						rectangles[i].h = rectangles[dragingrect].h;
+					rectangles[i].y = rectangles[dragingrect].y;
+				}
+				else {
+					if (rectangles[i].y + rectangles[i].h > rectangles[dragingrect].y + rectangles[dragingrect].h) {
+						rectangles[i].h = rectangles[i].h;
+					}
+					else
+						rectangles[i].h = (rectangles[dragingrect].y + rectangles[dragingrect].h) - rectangles[i].y;
+				}
+				
 				rectangles[i].combinecount += ++rectangles[dragingrect].combinecount;
 				rectCount--;
 				rectangles[dragingrect].init();
