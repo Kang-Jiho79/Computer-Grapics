@@ -69,7 +69,6 @@ public:
 		return horizontallyAdjacent || verticallyAdjacent;
 	}
 
-	// 애니메이션 시작 함수
 	void startMoveAnimation(float destX, float destY) {
 		if (!isMatched) {
 			isMoving = true;
@@ -78,7 +77,6 @@ public:
 		}
 	}
 
-	// 애니메이션 업데이트 함수
 	void updateAnimation() {
 		if (isMoving) {
 			float dx = targetX - x;
@@ -86,7 +84,6 @@ public:
 			float distance = sqrt(dx * dx + dy * dy);
 
 			if (distance < 0.005f) {
-				// 목표에 도달
 				x = targetX;
 				y = targetY;
 				isMoving = false;
@@ -94,72 +91,64 @@ public:
 				printf("블록 매칭 완료!\n");
 			}
 			else {
-				// 목표를 향해 이동
+				
 				x += dx * moveSpeed;
 				y += dy * moveSpeed;
 			}
 		}
 	}
 
-	// 좌측 목표 블록 생성 (충돌 방지 + 인접 배치)
 	void makeTargetRectangles(int index, rect targets[], int targetCount) {
 		color[0] = 0.2f;
 		color[1] = 0.2f;
 		color[2] = 0.2f;
 		color[3] = 1.0f;
 
-		// 블록 크기 (고정 크기로 패턴 생성을 쉽게)
 		w = 0.12f + getRandomfloat(0.0f, 0.03f);
 		h = 0.12f + getRandomfloat(0.0f, 0.03f);
 
 		if (index == 0) {
-			// 첫 번째 블록은 좌측 중앙에 배치
 			x = -0.8f;
 			y = 0.0f;
 		}
 		else {
-			// 기존 블록들과 인접하게 배치
 			bool placed = false;
 			int attempts = 0;
 			const int maxAttempts = 100;
 
 			while (!placed && attempts < maxAttempts) {
-				// 기존 블록 중 하나를 랜덤 선택
 				int baseIndex = rand() % index;
 				if (!targets[baseIndex].exist) {
 					attempts++;
 					continue;
 				}
 
-				// 선택된 블록의 인접 위치 중 하나를 랜덤 선택
-				int direction = rand() % 4; // 0:오른쪽, 1:왼쪽, 2:위, 3:아래
+				int direction = rand() % 4; 
 
 				switch (direction) {
-				case 0: // 오른쪽
+				case 0:
 					x = targets[baseIndex].x + targets[baseIndex].w;
 					y = targets[baseIndex].y + getRandomfloat(-0.05f, 0.05f);
 					break;
-				case 1: // 왼쪽
+				case 1:
 					x = targets[baseIndex].x - w;
 					y = targets[baseIndex].y + getRandomfloat(-0.05f, 0.05f);
 					break;
-				case 2: // 위
+				case 2:
 					x = targets[baseIndex].x + getRandomfloat(-0.05f, 0.05f);
 					y = targets[baseIndex].y + targets[baseIndex].h;
 					break;
-				case 3: // 아래
+				case 3: 
 					x = targets[baseIndex].x + getRandomfloat(-0.05f, 0.05f);
 					y = targets[baseIndex].y - h;
 					break;
 				}
 
-				// 경계 확인
 				if (x < -0.95f || x + w > -0.05f || y < -0.85f || y + h > 0.85f) {
 					attempts++;
 					continue;
 				}
 
-				// 다른 블록들과 충돌 확인
 				bool hasCollision = false;
 				for (int i = 0; i < index; i++) {
 					if (targets[i].exist) {
@@ -180,12 +169,10 @@ public:
 				}
 			}
 
-			// 배치 실패 시 폴백: 랜덤 위치
 			if (!placed) {
 				x = getRandomfloat(-0.9f, -0.2f);
 				y = getRandomfloat(-0.7f, 0.7f);
 
-				// 최소한의 충돌 회피 시도
 				for (int i = 0; i < 10; i++) {
 					bool hasCollision = false;
 					for (int j = 0; j < index; j++) {
@@ -210,14 +197,12 @@ public:
 		isTarget = true;
 		isMatched = false;
 	}
-	// 좌측 목표 블록 생성 (검은색, 반투명)
 	void makeTargetRectangles() {
 		color[0] = 0.2f;
 		color[1] = 0.2f;
 		color[2] = 0.2f;
-		color[3] = 1.0f; // 반투명
+		color[3] = 1.0f; 
 
-		// 좌측에 더 넓게 배치 
 		x = getRandomfloat(-0.9f, -0.2f);
 		y = getRandomfloat(-0.7f, 0.7f);
 		w = getRandomfloat(0.08f, 0.15f);
@@ -295,16 +280,15 @@ int autoMatchTimer = 0;
 const int autoMatchDelay = 30;
 
 void generateTargetPattern() {
-	printf("🎯 목표 패턴 생성 중...\n");
+	printf(" 목표 패턴 생성 중...\n");
 
 	for (int i = 0; i < maxrectcount; i++) {
 		targets[i].init();
 	}
 
-	currentTargetCount = 5 + (rand() % 4);
+	currentTargetCount = maxrectcount;
 	printf("목표 블록 개수: %d개\n", currentTargetCount);
 
-	// 첫 번째 블록 - 랜덤 크기로 시작
 	targets[0].x = -0.7f;
 	targets[0].y = 0.0f;
 	targets[0].w = getRandomfloat(0.08f, 0.16f);
@@ -316,9 +300,7 @@ void generateTargetPattern() {
 	targets[0].exist = true;
 	targets[0].isTarget = true;
 
-	// 나머지 블록들을 순차적으로 인접 배치
 	for (int i = 1; i < currentTargetCount; i++) {
-		// 각 블록마다 랜덤 크기 설정
 		targets[i].w = getRandomfloat(0.08f, 0.16f);
 		targets[i].h = getRandomfloat(0.08f, 0.16f);
 
@@ -332,32 +314,30 @@ void generateTargetPattern() {
 
 			float newX, newY;
 			switch (direction) {
-			case 0: // 오른쪽
+			case 0: 
 				newX = targets[baseIndex].x + targets[baseIndex].w;
 				newY = targets[baseIndex].y;
 				break;
-			case 1: // 왼쪽
+			case 1: 
 				newX = targets[baseIndex].x - targets[i].w;
 				newY = targets[baseIndex].y;
 				break;
-			case 2: // 위
+			case 2: 
 				newX = targets[baseIndex].x;
 				newY = targets[baseIndex].y + targets[baseIndex].h;
 				break;
-			case 3: // 아래
+			case 3: 
 				newX = targets[baseIndex].x;
 				newY = targets[baseIndex].y - targets[i].h;
 				break;
 			}
 
-			// 경계 체크 - 각 블록의 실제 크기 사용
 			if (newX < -0.95f || newX + targets[i].w > -0.05f ||
 				newY < -0.8f || newY + targets[i].h > 0.8f) {
 				attempts++;
 				continue;
 			}
 
-			// 충돌 체크 - 각 블록의 실제 크기 사용
 			bool collision = false;
 			rect tempBlock;
 			tempBlock.x = newX;
@@ -383,7 +363,6 @@ void generateTargetPattern() {
 				targets[i].exist = true;
 				targets[i].isTarget = true;
 				placed = true;
-				printf("블록 %d 배치: (%.2f, %.2f) 크기(%.2f, %.2f)\n", i, newX, newY, targets[i].w, targets[i].h);
 			}
 
 			attempts++;
@@ -399,11 +378,9 @@ void generateTargetPattern() {
 			targets[i].color[3] = 1.0f;
 			targets[i].exist = true;
 			targets[i].isTarget = true;
-			printf("블록 %d 강제 배치: (%.2f, %.2f) 크기(%.2f, %.2f)\n", i, targets[i].x, targets[i].y, targets[i].w, targets[i].h);
 		}
 	}
 
-	printf("✅ 목표 패턴 생성 완료!\n");
 }
 
 // 자동 매칭 시작 함수
@@ -413,17 +390,15 @@ void startAutoMatching() {
 	autoMatching = true;
 	currentAutoMatchIndex = 0;
 	autoMatchTimer = 0;
-	printf("🚀 자동 매칭 시작!\n");
 }
 
-// 다음 매치되지 않은 블록 찾기
 int findNextUnmatchedBlock() {
 	for (int i = currentAutoMatchIndex; i < currentTargetCount; i++) {
 		if (!playerBlocks[i].isMatched && !playerBlocks[i].isMoving) {
 			return i;
 		}
 	}
-	return -1; // 매치되지 않은 블록이 없음
+	return -1;
 }
 
 // 매칭 확인 함수
@@ -447,7 +422,7 @@ void checkMatching() {
 
 	gameComplete = (matchedCount == currentTargetCount);
 	if (gameComplete) {
-		printf("🎉 축하합니다! 모든 블록을 맞췄습니다! 🎉\n");
+		printf(" 축하합니다! 모든 블록을 맞췄습니다! \n");
 	}
 }
 
@@ -484,10 +459,6 @@ void main(int argc, char** argv)
 		playerBlocks[i].makePlayerRectangle(targets[i].w, targets[i].h, i);
 	}
 
-	printf("🎮 게임 시작!\n");
-	printf("우측 블록들을 드래그해서 좌측 목표 위치에 맞춰보세요!\n");
-	printf("r: 새 패턴, q: 종료\n");
-
 	glutDisplayFunc(drawScene);
 	glutReshapeFunc(Reshape);
 	glutKeyboardFunc(Keyboard);
@@ -513,7 +484,8 @@ GLvoid drawScene()
 
 	// 목표 블록들 그리기 (좌측)
 	for (int i = 0; i < currentTargetCount; i++) {
-		if (targets[i].exist) {
+		if (targets[i].exist && !playerBlocks[i].isMatched) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			glColor4f(targets[i].color[0], targets[i].color[1], targets[i].color[2], targets[i].color[3]);
 			glRectf(targets[i].x, targets[i].y, targets[i].x + targets[i].w, targets[i].y + targets[i].h);
 		}
@@ -521,6 +493,7 @@ GLvoid drawScene()
 
 	// 플레이어 블록들 그리기 (우측)
 	for (int i = 0; i < currentTargetCount; i++) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		if (playerBlocks[i].exist) {
 			if (playerBlocks[i].isMatched) {
 				glColor4f(0.0f, 0.9f, 0.0f, 0.9f); // 초록색
@@ -545,14 +518,13 @@ GLvoid Reshape(int w, int h)
 GLvoid Keyboard(unsigned char key, int x, int y)
 {
 	switch (key) {
-	case 'a': { // 자동 매칭
+	case 'a': { 
 		if (!autoMatching) {
 			startAutoMatching();
 		}
 		break;
 	}
 	case 'r': { // 새 게임
-		printf("🔄 새로운 패턴 생성...\n");
 		gameComplete = false;
 		matchedCount = 0;
 		autoMatching = false; // 자동 매칭 중단
@@ -581,12 +553,10 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 }
 
 GLvoid TimerFunction(int value) {
-	// 애니메이션 업데이트
 	for (int i = 0; i < currentTargetCount; i++) {
 		playerBlocks[i].updateAnimation();
 	}
 
-	// 자동 매칭 로직
 	if (autoMatching) {
 		autoMatchTimer++;
 
@@ -594,16 +564,12 @@ GLvoid TimerFunction(int value) {
 			int nextBlock = findNextUnmatchedBlock();
 
 			if (nextBlock != -1) {
-				// 다음 블록을 목표 위치로 이동 시작
 				playerBlocks[nextBlock].startMoveAnimation(targets[nextBlock].x, targets[nextBlock].y);
-				printf("블록 %d 자동 이동 시작!\n", nextBlock);
 				currentAutoMatchIndex = nextBlock + 1;
 				autoMatchTimer = 0;
 			}
 			else {
-				// 모든 블록이 매치되었거나 이동 중
 				autoMatching = false;
-				printf("자동 매칭 완료!\n");
 			}
 		}
 	}
@@ -629,14 +595,14 @@ GLvoid Mouse(int button, int state, int x, int y)
 				isDragging = true;
 				lastX = x_ndc;
 				lastY = y_ndc;
-				printf("🔷 블록 %d 드래그 시작\n", i);
+				printf("블록 %d 드래그 시작\n", i);
 				break;
 			}
 		}
 	}
 	else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
 		if (draggingRect != -1) {
-			printf("🔷 블록 %d 드래그 종료\n", draggingRect);
+			printf("블록 %d 드래그 종료\n", draggingRect);
 			isDragging = false;
 			draggingRect = -1;
 		}

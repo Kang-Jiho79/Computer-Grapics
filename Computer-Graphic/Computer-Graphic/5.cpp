@@ -186,13 +186,17 @@ GLvoid Mouse(int button, int state, int x, int y)
     float y_ndc = -(1.0f * y / 300 - 1.0f);
 
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-		isDragging = true;
 		erase.x = x_ndc - erase.w / 2;
-		erase.y = x_ndc - erase.w / 2;
+		erase.y = y_ndc - erase.w / 2;
+        isDragging = true;
         glutPostRedisplay();
     }
     else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
         isDragging = false;
+        erase.init();
+		erase.makeRectangles();
+        erase.w += 0.05;
+        erase.h += 0.05;
 		erase.color[0] = 0.0f;
 		erase.color[1] = 0.0f;
 		erase.color[2] = 0.0f;
@@ -206,6 +210,8 @@ GLvoid Mouse(int button, int state, int x, int y)
 					rectangles[i].x = x_ndc - rectangles[i].w / 2;
 					rectangles[i].y = y_ndc - rectangles[i].h / 2;
                     rectCount++;
+					erase.w -= 0.05;
+					erase.h -= 0.05;
                     break;
                 }
             }

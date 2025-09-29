@@ -58,7 +58,7 @@ public:
             x = getRandomfloat();
             y = getRandomfloat();
             w = 0.15f + getRandomfloat() * 0.1f; // 0.15 ~ 0.25
-            h = 0.15f + getRandomfloat() * 0.1f;
+            h = w;
         } else { // 분할된 사각형
             x = cx;
             y = cy;
@@ -293,7 +293,7 @@ void divideRectangle(int index) {
                     newY = originalY + onethirdH;
                     break;
                 }
-                rectangles[i].makeRectangles(newX, newY, halfW);
+                rectangles[i].makeRectangles(newX, newY, onethirdW);
                 rectangles[i].isDivided = true;
                 rectangles[i].startAnimation(created, animType);
                 rectCount++;
