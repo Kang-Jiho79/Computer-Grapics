@@ -447,10 +447,10 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		if (selectedShape != -1) {
 			Shape& shape = shapes[selectedShape];
 			for (size_t i = 0; i < shape.vertices.size(); i += 3) {
-				shape.vertices[i] += 0.05f;
+				shape.vertices[i] -= 0.05f;
 			}
 			for (size_t i = 1; i < shape.vertices.size(); i += 3) {
-				shape.vertices[i] += 0.05f;
+				shape.vertices[i] -= 0.05f;
 			}
 			initBuffer(shape);
 		}
