@@ -51,5 +51,8 @@
     <ClCompile Include="10.cpp">
       <Filter>소스 파일\2. GLSL Basic</Filter>
     </ClCompile>
+    <ClCompile Include="11.cpp">
+      <Filter>소스 파일\2. GLSL Basic</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

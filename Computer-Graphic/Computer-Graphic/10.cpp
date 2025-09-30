@@ -413,78 +413,151 @@ GLvoid TimerFunction(int value) {
 	else if (animType == RECTSPIRAL) {
 		for (int i = 0; i < existingShapes; i++) {
 			Shape& shape = shapes[i];
+
+			// 현재 위치 업데이트
 			shape.centerX += shape.dx;
 			shape.centerY += shape.dy;
+
 			if (!shape.spiralDirection) {
-				if (shape.spiralState == 0 && shape.centerX <= -shape.spiralLevel + shape.size) { // 왼쪽
-					shape.centerX = -shape.spiralLevel + shape.size;
-					shape.spiralState = 1; // 아래로 전환
-					shape.dx = 0.0f;
-					shape.dy = -0.05f;
-					shape.spiralLevel -= 0.1f;
+				switch (shape.spiralState) {
+				case 0: // 왼쪽으로 이동 중
+					if (shape.centerX <= -shape.spiralLevel + shape.size) {
+						shape.centerX = -shape.spiralLevel + shape.size;
+						shape.spiralState = 1; // 아래로 전환
+						shape.dx = 0.0f;
+						shape.dy = -0.05f;
+					}
+					break;
+				case 1: // 아래로 이동 중
+					if (shape.centerY <= -shape.spiralLevel + shape.size) {
+						shape.centerY = -shape.spiralLevel + shape.size;
+						shape.spiralState = 2; // 오른쪽으로 전환
+						shape.dx = 0.05f;
+						shape.dy = 0.0f;
+						shape.spiralLevel -= 0.15f; // 레벨 감소
+					}
+					break;
+				case 2: // 오른쪽으로 이동 중
+					if (shape.centerX >= shape.spiralLevel - shape.size) {
+						shape.centerX = shape.spiralLevel - shape.size;
+						shape.spiralState = 3; // 위로 전환
+						shape.dx = 0.0f;
+						shape.dy = 0.05f;
+					}
+					break;
+				case 3: // 위로 이동 중
+					if (shape.centerY >= shape.spiralLevel - shape.size) {
+						shape.centerY = shape.spiralLevel - shape.size;
+						shape.spiralState = 0; // 왼쪽으로 전환
+						shape.dx = -0.05f;
+						shape.dy = 0.0f;
+						shape.spiralLevel -= 0.15f; // 레벨 감소
+					}
+					break;
 				}
-				else if (shape.spiralState == 1 && shape.centerY <= -shape.spiralLevel + shape.size) { // 아래
-					shape.centerY = -shape.spiralLevel + shape.size;
-					shape.spiralState = 2; // 오른쪽으로 전환
-					shape.dx = 0.05f;
-					shape.dy = 0.0f;
-					shape.spiralLevel -= 0.1f;
-				}
-				else if (shape.spiralState == 2 && shape.centerX >= shape.spiralLevel - shape.size) { // 오른쪽
-					shape.centerX = shape.spiralLevel - shape.size;
-					shape.spiralState = 3; // 위로 전환
-					shape.dx = 0.0f;
-					shape.dy = 0.05f;
-					shape.spiralLevel -= 0.1f;
-				}
-				else if (shape.spiralState == 3 && shape.centerY >= shape.spiralLevel - shape.size) { // 위
-					shape.centerY = shape.spiralLevel - shape.size;
-					shape.spiralState = 0; // 왼쪽으로 전환
-					shape.dx = -0.05f;
-					shape.dy = 0.0f;
-					shape.spiralLevel -= 0.1f;
-				}
-				if (shape.spiralLevel < 0.1f) {
+
+				// 중심에 도달하면 바깥쪽으로 방향 전환
+				if (shape.spiralLevel < 0.2f) {
 					shape.spiralLevel = 0.1f;
-					shape.spiralDirection = true; // 안쪽으로 전환
+					shape.spiralDirection = true; // 바깥쪽으로 전환
+
+					// 현재 상태에 따라 시계방향으로 전환
+					switch (shape.spiralState) {
+					case 0: // 왼쪽 → 위로
+						shape.spiralState = 3;
+						shape.dx = 0.0f;
+						shape.dy = 0.05f;
+						break;
+					case 1: // 아래 → 왼쪽으로
+						shape.spiralState = 0;
+						shape.dx = -0.05f;
+						shape.dy = 0.0f;
+						break;
+					case 2: // 오른쪽 → 아래로
+						shape.spiralState = 1;
+						shape.dx = 0.0f;
+						shape.dy = -0.05f;
+						break;
+					case 3: // 위 → 오른쪽으로
+						shape.spiralState = 2;
+						shape.dx = 0.05f;
+						shape.dy = 0.0f;
+						break;
+					}
 				}
 			}
 			else {
-				if (shape.spiralState == 0 && shape.centerX >= -shape.spiralLevel + shape.size) { // 왼쪽
-					shape.centerX = -shape.spiralLevel + shape.size;
-					shape.spiralState = 3; // 위로 전환
-					shape.dx = 0.0f;
-					shape.dy = 0.05f;
-					shape.spiralLevel += 0.1f;
+				// 바깥쪽으로 나가기 (시계방향: 위→오른쪽→아래→왼쪽→위)
+				switch (shape.spiralState) {
+				case 0: // 왼쪽으로 이동 중
+					if (shape.centerX <= -shape.spiralLevel + shape.size) {
+						shape.centerX = -shape.spiralLevel + shape.size;
+						shape.spiralState = 3; // 위로 전환
+						shape.dx = 0.0f;
+						shape.dy = 0.05f;
+						shape.spiralLevel += 0.15f; // 레벨 증가
+					}
+					break;
+				case 1: // 아래로 이동 중
+					if (shape.centerY <= -shape.spiralLevel + shape.size) {
+						shape.centerY = -shape.spiralLevel + shape.size;
+						shape.spiralState = 0; // 왼쪽으로 전환
+						shape.dx = -0.05f;
+						shape.dy = 0.0f;
+						shape.spiralLevel += 0.15f; // 레벨 증가
+					}
+					break;
+				case 2: // 오른쪽으로 이동 중
+					if (shape.centerX >= shape.spiralLevel - shape.size) {
+						shape.centerX = shape.spiralLevel - shape.size;
+						shape.spiralState = 1; // 아래로 전환
+						shape.dx = 0.0f;
+						shape.dy = -0.05f;
+					}
+					break;
+				case 3: // 위로 이동 중
+					if (shape.centerY >= shape.spiralLevel - shape.size) {
+						shape.centerY = shape.spiralLevel - shape.size;
+						shape.spiralState = 2; // 오른쪽으로 전환
+						shape.dx = 0.05f;
+						shape.dy = 0.0f;
+					}
+					break;
 				}
-				else if (shape.spiralState == 3 && shape.centerY >= shape.spiralLevel - shape.size) { // 위
-					shape.centerY = shape.spiralLevel - shape.size;
-					shape.spiralState = 2; // 오른쪽으로 전환
-					shape.dx = 0.05f;
-					shape.dy = 0.0f;
-					shape.spiralLevel += 0.1f;
-				}
-				else if (shape.spiralState == 2 && shape.centerX <= shape.spiralLevel - shape.size) { // 오른쪽
-					shape.centerX = shape.spiralLevel - shape.size;
-					shape.spiralState = 1; // 아래로 전환
-					shape.dx = 0.0f;
-					shape.dy = -0.05f;
-					shape.spiralLevel += 0.1f;
-				}
-				else if (shape.spiralState == 1 && shape.centerY <= -shape.spiralLevel + shape.size) { // 아래
-					shape.centerY = -shape.spiralLevel + shape.size;
-					shape.spiralState = 0; // 왼쪽으로 전환
-					shape.dx = -0.05f;
-					shape.dy = 0.0f;
-					shape.spiralLevel += 0.1f;
-				}
+
+				// 외곽에 도달하면 안쪽으로 방향 전환
 				if (shape.spiralLevel > 1.0f) {
 					shape.spiralLevel = 1.0f;
-					shape.spiralDirection = false; // 바깥쪽으로 전환
+					shape.spiralDirection = false; // 안쪽으로 전환
+
+					// 현재 상태에 따라 반시계방향으로 전환
+					switch (shape.spiralState) {
+					case 0: // 왼쪽 → 아래로
+						shape.spiralState = 1;
+						shape.dx = 0.0f;
+						shape.dy = -0.05f;
+						break;
+					case 1: // 아래 → 오른쪽으로
+						shape.spiralState = 2;
+						shape.dx = 0.05f;
+						shape.dy = 0.0f;
+						break;
+					case 2: // 오른쪽 → 위로
+						shape.spiralState = 3;
+						shape.dx = 0.0f;
+						shape.dy = 0.05f;
+						break;
+					case 3: // 위 → 왼쪽으로
+						shape.spiralState = 0;
+						shape.dx = -0.05f;
+						shape.dy = 0.0f;
+						break;
+					}
 				}
 			}
-			float rotation = calculateRotationAngle(shape.dx, shape.dy);
 
+			// 회전각 계산 및 삼각형 업데이트
+			float rotation = calculateRotationAngle(shape.dx, shape.dy);
 			updateTriangleVertices(shape, shape.centerX, shape.centerY, rotation);
 		}
 	}
