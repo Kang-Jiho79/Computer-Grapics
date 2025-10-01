@@ -48,6 +48,8 @@ float x_ndc = 0.0f, y_ndc = 0.0f;
 int existingShapes = 0;
 bool line = false;
 
+GLclampf color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
 GLvoid initBuffer(Shape& shape);
 
 std::random_device rd;
@@ -202,7 +204,7 @@ void initBuffer(Shape& shape)
 
 GLvoid drawScene()
 {
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClearColor(color[0], color[1], color[2], 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(shaderProgramID);
 
@@ -213,8 +215,6 @@ GLvoid drawScene()
 		if (line)
 			glDrawArrays(GL_LINE_STRIP, 0, shape.vertices.size()/3);
 		else {
-			 for (size_t v = 0; v < shape.vertices.size(); v++) {
-			 }
 			glPointSize(5.0f);
 			glDrawArrays(GL_POINTS, 0, shape.vertices.size()/3);
 		}
@@ -247,6 +247,7 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 				shape.centerdY = shape.centerY;
 				shape.vertices.clear();
 				shape.type = 1; // 积己吝
+				color[0] = getRandomcolor(); color[1] = getRandomcolor(); color[2] = getRandomcolor();
 			}
 		}
 		break;
@@ -264,6 +265,7 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 				shape.centerdY = shape.centerY;
 				shape.vertices.clear();
 				shape.type = 1; // 积己吝
+				color[0] = getRandomcolor(); color[1] = getRandomcolor(); color[2] = getRandomcolor();
 			}
 		}
 		break;
@@ -281,6 +283,7 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 				shape.centerdY = shape.centerY;
 				shape.vertices.clear();
 				shape.type = 1; // 积己吝
+				color[0] = getRandomcolor(); color[1] = getRandomcolor(); color[2] = getRandomcolor();
 			}
 		}
 		break;
@@ -298,6 +301,7 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 				shape.centerdY = shape.centerY;
 				shape.vertices.clear();
 				shape.type = 1; // 积己吝
+				color[0] = getRandomcolor(); color[1] = getRandomcolor(); color[2] = getRandomcolor();
 			}
 		}
 		break;
@@ -315,6 +319,7 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 				shape.centerdY = shape.centerY;
 				shape.vertices.clear();
 				shape.type = 1; // 积己吝
+				color[0] = getRandomcolor(); color[1] = getRandomcolor(); color[2] = getRandomcolor();
 			}
 		}
 		break;

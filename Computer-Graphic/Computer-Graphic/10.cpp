@@ -41,6 +41,8 @@ public:
 	int type;
 	GLuint VAO, VBO[2];
 
+	bool updown = true;
+
 	// 스파이럴 전용 상태 변수 추가
 	int spiralState = 0; // 0:왼쪽, 1:아래, 2:오른쪽, 3:위
     float spiralLevel = 0; // 현재 스파이럴 레벨
@@ -53,6 +55,8 @@ Shape shapes[MaxShapes];
 float x_ndc = 0.0f, y_ndc = 0.0f;
 int existingShapes = 0;
 int animType = NONE;
+
+
 
 int rectCount = 0;
 
@@ -161,6 +165,7 @@ void makezigzag()
 		Shape& shape = shapes[i];
 		shape.dx = 0.05f;
 		shape.dy = 0.0f;
+		shape.spiralState = 0;
 	}
 }
 
@@ -172,6 +177,7 @@ void makerectspiral()
 		shape.centerY = 1.0f - shape.size; // 시작 위치를 위쪽 중앙으로 설정
 		shape.dx = -0.05f;          // 왼쪽으로 이동
 		shape.dy = 0.0f;
+		shape.spiralState = 0;      // 왼쪽으로 시작
         shape.spiralLevel = 1.0f;            // 큰 사각형에서 시작
         shape.spiralDirection = false;        // 안쪽으로 시작
     }
@@ -395,18 +401,74 @@ GLvoid TimerFunction(int value) {
 	else if (animType == ZIGZAG) {
 		for (int i = 0; i < existingShapes; i++) {
 			Shape& shape = shapes[i];
-			
+
 			shape.centerX += shape.dx;
-			
-			if (shape.centerX - shape.size < -1.0f || shape.centerX + shape.size > 1.0f) {
-				shape.dx *= -1;
-				if (shape.centerY - shape.size < -1.0f || shape.centerY + shape.size > 1.0f) {
-					shape.dy *= -1;
-				}
-				shape.centerY += shape.dy;
+			if (shape.spiralState == 1) {
+				shape.centerY += 0.01f;
+				shape.dy -= 0.01f;
 			}
-			float rotation = calculateRotationAngle(shape.dx, 0);
+			else if (shape.spiralState == 3) {
+				shape.centerY -= 0.01f;
+				shape.dy += 0.01f;
+			}
 			
+
+			if (shape.spiralState == 0)
+			{
+				if (shape.centerX + shape.size > 1.0f) {
+					shape.centerX = 1.0f - shape.size;
+					if (shape.centerY > 1.0f)
+						shape.updown = false;
+					else if (shape.centerY < -1.0f)
+						shape.updown = true;
+					if (shape.updown) {
+						shape.spiralState = 1; // 위로 전환
+						shape.dy = 0.1f;
+						shape.dx = 0.0f;
+					}
+					else {
+						shape.spiralState = 3; // 아래로 전환
+						shape.dy = -0.1f;
+						shape.dx = 0.0f;
+					}
+				}
+			}
+			else if (shape.spiralState == 2) {
+				if (shape.centerX - shape.size < -1.0f) {
+					shape.centerX = -1.0f + shape.size;
+					if (shape.centerX > 1.0f)
+						shape.updown = false;
+					else if (shape.centerX < -1.0f)
+						shape.updown = true;
+					if (shape.updown) {
+						shape.spiralState = 1; // 위로 전환
+						shape.dy = 0.1f;
+						shape.dx = 0.0f;
+					}
+					else {
+						shape.spiralState = 3; // 아래로 전환
+						shape.dy = -0.1f;
+						shape.dx = 0.0f;
+					}
+				}
+			}
+			else if ((shape.spiralState ==1 && shape.dy <0) || (shape.spiralState == 3 && shape.dy > 0)) {
+				if (shape.centerX < 0.0f)
+				{
+					shape.spiralState = 0; // 오른쪽으로 전환
+					shape.dx = 0.05f;
+					shape.dy = 0.0f;
+				}
+				else if (shape.centerX > 0.0f)
+				{
+					shape.spiralState = 2; // 왼쪽으로 전환
+					shape.dx = -0.05f;
+					shape.dy = 0.0f;
+				}
+			}
+			
+			float rotation = calculateRotationAngle(shape.dx, shape.dy);
+
 			updateTriangleVertices(shape, shape.centerX, shape.centerY, rotation);
 		}
 	}
@@ -458,7 +520,7 @@ GLvoid TimerFunction(int value) {
 
 				// 중심에 도달하면 바깥쪽으로 방향 전환
 				if (shape.spiralLevel < 0.2f) {
-					shape.spiralLevel = 0.1f;
+					shape.spiralLevel = 0.2f;
 					shape.spiralDirection = true; // 바깥쪽으로 전환
 
 					// 현재 상태에 따라 시계방향으로 전환
@@ -568,6 +630,7 @@ GLvoid TimerFunction(int value) {
 
 			shape.centerX = cos(shape.angle + i) * shape.spiralLevel;
 			shape.centerY = sin(shape.angle + i) * shape.spiralLevel;
+
 			if (shape.spiralDirection) {
 				shape.spiralLevel -= 0.002f; // 안쪽으로 이동
 				shape.angle -= 0.05f;
