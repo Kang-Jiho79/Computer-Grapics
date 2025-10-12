@@ -20,8 +20,7 @@ GLvoid Mouse(int button, int state, int x, int y);
 GLint width, height;
 GLuint shaderProgramID; 
 GLuint vertexShader;	
-GLuint fragmentShader; 
-GLvoid Mouse(int button, int state, int x, int y);
+GLuint fragmentShader;
 const GLfloat triShape[3][3]{};
 const GLfloat colors[3][3]{};
 
