@@ -372,7 +372,6 @@ GLvoid drawScene()
 	glUseProgram(shaderProgramID);
 
 	// 변환 행렬 생성
-	glm::mat4 model = glm::mat4(1.0f);
 	glm::mat4 view = glm::mat4(1.0f);
 	glm::mat4 projection = glm::mat4(1.0f);
 
@@ -382,11 +381,12 @@ GLvoid drawScene()
 	// 투영 행렬 (원근 투영)
 	projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
 
-	// 모델 행렬 (회전)
-	model = glm::rotate(model, glm::radians(30.0f), glm::vec3(1.0f, -1.0f, 0.0f));
+	glm::mat4 baseRotation = glm::mat4(1.0f);
+	baseRotation = glm::rotate(baseRotation, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	baseRotation = glm::rotate(baseRotation, glm::radians(50.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 
 	// 최종 변환 행렬
-	glm::mat4 Matrix = projection * view * model;
+	glm::mat4 Matrix = projection * view * baseRotation;
 	
 	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "Matrix");
 	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(Matrix));
