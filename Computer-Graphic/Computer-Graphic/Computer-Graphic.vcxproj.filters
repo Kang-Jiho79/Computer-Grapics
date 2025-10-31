@@ -13,14 +13,14 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="소스 파일\1. OpenGL Basic">
-      <UniqueIdentifier>{b35d951c-c05a-4fe5-948e-806775b66061}</UniqueIdentifier>
-    </Filter>
     <Filter Include="소스 파일\2. GLSL Basic">
       <UniqueIdentifier>{47c244eb-1309-47e0-9c02-e0e8fa3c5f4e}</UniqueIdentifier>
     </Filter>
     <Filter Include="소스 파일\OpenGL cordinate transformation">
       <UniqueIdentifier>{a82d5c0d-d87d-4bd6-9a90-314a65099a53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\1. OpenGL Basic">
+      <UniqueIdentifier>{b35d951c-c05a-4fe5-948e-806775b66061}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -73,6 +73,9 @@
       <Filter>소스 파일\OpenGL cordinate transformation</Filter>
     </ClCompile>
     <ClCompile Include="17.cpp">
+      <Filter>소스 파일\OpenGL cordinate transformation</Filter>
+    </ClCompile>
+    <ClCompile Include="18.cpp">
       <Filter>소스 파일\OpenGL cordinate transformation</Filter>
     </ClCompile>
   </ItemGroup>

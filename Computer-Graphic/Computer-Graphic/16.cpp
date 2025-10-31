@@ -377,7 +377,7 @@ GLvoid drawScene()
 
 	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
-	projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+	projection = glm::perspective(glm::radians(60.0f), (float)width / (float)height, 0.1f, 100.0f);
 
 	glm::mat4 baseRotation = glm::mat4(1.0f);
 	baseRotation = glm::rotate(baseRotation, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -428,11 +428,9 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		break;
 	case 'h':
 		depthTest = !depthTest;
-		culling = false;
 		break;
 	case 'u':
 		culling = !culling;
-		depthTest = false;
 		break;
 	case 'w':
 		wireframe = true;

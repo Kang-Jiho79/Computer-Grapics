@@ -434,32 +434,26 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	case '1': // ¾Õ¸é
 		cube_pyramid = true;
 		currentFace = 1;
-		std::cout << "¸é 1 (¾Õ¸é) Ç¥½Ã" << std::endl;
 		break;
 	case '2': // ¿À¸¥ÂÊ¸é
 		cube_pyramid = true;
 		currentFace = 2;
-		std::cout << "¸é 2 (¿À¸¥ÂÊ¸é) Ç¥½Ã" << std::endl;
 		break;
 	case '3': // µÞ¸é
 		cube_pyramid = true;
 		currentFace = 3;
-		std::cout << "¸é 3 (µÞ¸é) Ç¥½Ã" << std::endl;
 		break;
 	case '4': // ¿ÞÂÊ¸é
 		cube_pyramid = true;
 		currentFace = 4;
-		std::cout << "¸é 4 (¿ÞÂÊ¸é) Ç¥½Ã" << std::endl;
 		break;
 	case '5': // À­¸é
 		cube_pyramid = true;
 		currentFace = 5;
-		std::cout << "¸é 5 (À­¸é) Ç¥½Ã" << std::endl;
 		break;
 	case '6': // ¾Æ·§¸é
 		cube_pyramid = true;
 		currentFace = 6;
-		std::cout << "¸é 6 (¾Æ·§¸é) Ç¥½Ã" << std::endl;
 		break;
 	case '7':
 		cube_pyramid = false;
@@ -484,7 +478,6 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		do {
 			cube_randomFace[1] = std::rand() % 6;
 		} while (cube_randomFace[1] == cube_randomFace[0]);
-		std::cout << "À°¸éÃ¼¿¡¼­ ·£´ýÇÑ 2°³ ¸é Ç¥½Ã" << std::endl;
 		break;
 	case 't': 
 		cube_pyramid = false;
@@ -493,7 +486,6 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		break;
 	case 'a': // ÀüÃ¼ Ç¥½Ã
 		currentFace = 0;
-		std::cout << "ÀüÃ¼ Á¤À°¸éÃ¼ Ç¥½Ã" << std::endl;
 		break;
 	case 'q': // Á¾·á
 		glutLeaveMainLoop();
