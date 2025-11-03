@@ -6,9 +6,7 @@
 #include <random>
 #include <cmath>
 
-#ifndef M_PI
 #define M_PI 3.14159265358979323846
-#endif
 
 #include <gl/glew.h>
 #include <gl/freeglut.h>
@@ -59,30 +57,24 @@ public:
 	float animSpeed = 0.02f;
 	int animType = 0; // 0: 없음, 1: 원점 통과, 2: 위/아래 이동
 	
-    // baseRotation도 고려한 버전 (더 정확함)
     void getTransformedPosition(float outPos[3]) const {
-		// drawScene과 완전히 동일한 변환 순서 적용
 		glm::mat4 baseRotation = glm::mat4(1.0f);
 		baseRotation = glm::rotate(baseRotation, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		baseRotation = glm::rotate(baseRotation, glm::radians(50.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 		
-		glm::mat4 modelMatrix = baseRotation;  // baseRotation 포함!
+		glm::mat4 modelMatrix = baseRotation; 
         
-		// 1. 원점 기준 확대/축소
 		modelMatrix = glm::scale(modelMatrix, glm::vec3(
 			origin_scale_value[0], origin_scale_value[1], origin_scale_value[2]
 		));
 
-		// 2. 공전
 		modelMatrix = glm::rotate(modelMatrix, glm::radians(revolutionAngle),
 			glm::vec3(0.0f, 1.0f, 0.0f));
 
-		// 3. 이동
 		modelMatrix = glm::translate(modelMatrix, glm::vec3(
 			translation[0], translation[1], translation[2]
 		));
 
-		// 원점을 변환하여 실제 위치 얻기
 		glm::vec4 transformedPos = modelMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 		outPos[0] = transformedPos.x;
@@ -244,7 +236,6 @@ void startOriginPassAnimation() {
     isGlobalAnimating = true;
     currentAnimationType = 1;
 
-    // baseRotation 생성 (drawScene과 동일)
     glm::mat4 baseRotation = glm::mat4(1.0f);
     baseRotation = glm::rotate(baseRotation, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     baseRotation = glm::rotate(baseRotation, glm::radians(50.0f), glm::vec3(0.0f, -1.0f, 0.0f));
@@ -254,7 +245,6 @@ void startOriginPassAnimation() {
         shape[i].animProgress = 0.0f;
         shape[i].animType = 1;
 
-        // baseRotation을 포함한 정확한 위치 계산
         shape[i].getTransformedPosition(shape[i].startPos);
     }
     
@@ -282,14 +272,12 @@ void startUpDownAnimation() {
         shape[i].animProgress = 0.0f;
         shape[i].animType = 2;
 
-        // 현재 위치를 정확히 계산
         shape[i].getTransformedPosition(shape[i].startPos);
         
         printf("Shape %d start position: (%.2f, %.2f, %.2f)\n", i,
             shape[i].startPos[0], shape[i].startPos[1], shape[i].startPos[2]);
     }
     
-    // 목표 위치 설정 (상대방의 위치)
     for (int i = 0; i < 2; i++) {
         int targetIndex = (i == 0) ? 1 : 0;
         shape[i].targetPos[0] = shape[targetIndex].startPos[0];
@@ -313,7 +301,6 @@ void updateAnimations() {
             shape[i].animProgress += shape[i].animSpeed;
 
             if (shape[i].animProgress >= 1.0f) {
-                // 애니메이션 완료 처리 (기존과 동일)
                 shape[i].animProgress = 1.0f;
                 shape[i].isAnimating = false;
                 
@@ -336,8 +323,6 @@ void updateAnimations() {
             }
             else {
                 allAnimationComplete = false;
-
-                // 애니메이션 중 다른 변환 무력화
                 shape[i].revolutionAngle = 0.0f;
                 shape[i].origin_scale_value[0] = shape[i].origin_scale_value[1] = shape[i].origin_scale_value[2] = 1.0f;
                 shape[i].self_scale_value[0] = shape[i].self_scale_value[1] = shape[i].self_scale_value[2] = 1.0f;
@@ -349,49 +334,41 @@ void updateAnimations() {
                 glm::mat4 invBaseRotation = glm::inverse(baseRotation);
 
                 if (currentAnimationType == 1) {
-                    // t 애니메이션 (기존과 동일)
                     float t = shape[i].animProgress;
                     glm::vec3 currentWorldPos;
                     
                     if (t <= 0.5f) {
-                        // 첫 번째 절반: 시작점에서 원점으로
                         float localT = t * 2.0f;
                         currentWorldPos.x = shape[i].startPos[0] * (1.0f - localT);
                         currentWorldPos.y = shape[i].startPos[1] * (1.0f - localT);
                         currentWorldPos.z = shape[i].startPos[2] * (1.0f - localT);
                     }
                     else {
-                        // 두 번째 절반: 원점에서 목표점으로
                         float localT = (t - 0.5f) * 2.0f;
                         currentWorldPos.x = shape[i].targetPos[0] * localT;
                         currentWorldPos.y = shape[i].targetPos[1] * localT;
                         currentWorldPos.z = shape[i].targetPos[2] * localT;
                     }
                     
-                    // baseRotation 역변환 적용하여 translation 계산
                     glm::vec4 localPos = invBaseRotation * glm::vec4(currentWorldPos.x, currentWorldPos.y, currentWorldPos.z, 1.0f);
                     shape[i].translation[0] = localPos.x;
                     shape[i].translation[1] = localPos.y;
                     shape[i].translation[2] = localPos.z;
                 }
                 else if (currentAnimationType == 2) {
-                    // u 애니메이션: 훨씬 간단한 포물선 경로
                     float t = shape[i].animProgress;
                     
-                    // 시작점과 끝점 사이의 선형 보간
                     glm::vec3 linearPos;
                     linearPos.x = shape[i].startPos[0] + (shape[i].targetPos[0] - shape[i].startPos[0]) * t;
                     linearPos.y = shape[i].startPos[1] + (shape[i].targetPos[1] - shape[i].startPos[1]) * t;
                     linearPos.z = shape[i].startPos[2] + (shape[i].targetPos[2] - shape[i].startPos[2]) * t;
                     
                     // 포물선 높이 추가 (sin 함수 사용으로 부드러운 곡선)
-                    float heightOffset = sin(t * M_PI) * 1.0f; // 최대 높이 1.0
-                    
-                    // 각 객체마다 다른 방향으로 이동 (첫 번째는 위, 두 번째는 아래)
+                    float heightOffset = sin(t * M_PI) * 1.0f; 
                     if (i == 0) {
-                        linearPos.y += heightOffset; // 위로
+                        linearPos.y += heightOffset; 
                     } else {
-                        linearPos.y -= heightOffset; // 아래로
+                        linearPos.y -= heightOffset; 
                     }
                     
                     // baseRotation 역변환 적용
@@ -399,13 +376,6 @@ void updateAnimations() {
                     shape[i].translation[0] = localPos.x;
                     shape[i].translation[1] = localPos.y;
                     shape[i].translation[2] = localPos.z;
-                    
-                    // 디버그 출력 (필요시)
-                    if (i == 0 && ((int)(t * 100) % 10 == 0)) { // 10% 간격으로 출력
-                        printf("Shape %d: t=%.2f, world(%.2f,%.2f,%.2f), local(%.2f,%.2f,%.2f)\n", 
-                            i, t, linearPos.x, linearPos.y, linearPos.z,
-                            shape[i].translation[0], shape[i].translation[1], shape[i].translation[2]);
-                    }
                 }
             }
         }
