@@ -58,16 +58,16 @@ public:
 	float targetPos[3] = { 0.0f };
 	float animSpeed = 0.02f;
 	int animType = 0; // 0: 없음, 1: 원점 통과, 2: 위/아래 이동
-	
-    // baseRotation도 고려한 버전 (더 정확함)
-    void getTransformedPosition(float outPos[3]) const {
+
+	// baseRotation도 고려한 버전 (더 정확함)
+	void getTransformedPosition(float outPos[3]) const {
 		// drawScene과 완전히 동일한 변환 순서 적용
 		glm::mat4 baseRotation = glm::mat4(1.0f);
 		baseRotation = glm::rotate(baseRotation, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		baseRotation = glm::rotate(baseRotation, glm::radians(50.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-		
+
 		glm::mat4 modelMatrix = baseRotation;  // baseRotation 포함!
-        
+
 		// 1. 원점 기준 확대/축소
 		modelMatrix = glm::scale(modelMatrix, glm::vec3(
 			origin_scale_value[0], origin_scale_value[1], origin_scale_value[2]
@@ -88,9 +88,9 @@ public:
 		outPos[0] = transformedPos.x;
 		outPos[1] = transformedPos.y;
 		outPos[2] = transformedPos.z;
-		printf("getTransformedPosition (with baseRotation): (%.2f, %.2f, %.2f)\n", 
-               outPos[0], outPos[1], outPos[2]);
-    }
+		printf("getTransformedPosition (with baseRotation): (%.2f, %.2f, %.2f)\n",
+			outPos[0], outPos[1], outPos[2]);
+	}
 	~Shape() {
 		if (obj) {
 			gluDeleteQuadric(obj);
@@ -129,11 +129,11 @@ void createAxis(Shape& shape)
 }
 
 void createSphere(Shape& shape, float radius = 0.5f) {
-    shape.obj = gluNewQuadric();
-    gluQuadricDrawStyle(shape.obj, GLU_LINE);
-    gluQuadricNormals(shape.obj, GLU_SMOOTH);
-    gluQuadricTexture(shape.obj, GL_FALSE);
-    shape.size = radius;
+	shape.obj = gluNewQuadric();
+	gluQuadricDrawStyle(shape.obj, GLU_LINE);
+	gluQuadricNormals(shape.obj, GLU_SMOOTH);
+	gluQuadricTexture(shape.obj, GL_FALSE);
+	shape.size = radius;
 	shape.type = 0;
 }
 
@@ -146,7 +146,7 @@ void createCylinder(Shape& shape, float baseRadius = 0.3f, float topRadius = 0.3
 	shape.type = 1;
 }
 
-void createCone(Shape& shape, float baseRadius = 0.5f, float height = 0.5f) {
+void createCone(Shape& shape, float baseRadius = 0.3f, float height = 0.3f) {
 	shape.obj = gluNewQuadric();
 	gluQuadricDrawStyle(shape.obj, GLU_LINE);
 	gluQuadricNormals(shape.obj, GLU_SMOOTH);
@@ -175,40 +175,40 @@ void flagreset() {
 }
 
 void reset() {
-    // 애니메이션 상태 먼저 초기화
-    isGlobalAnimating = false;
-    currentAnimationType = 0;
-    
-    createSphere(shape[0], 0.3f);
-    shape[0].translation[0] = -0.5f;
+	// 애니메이션 상태 먼저 초기화
+	isGlobalAnimating = false;
+	currentAnimationType = 0;
 
-    createCylinder(shape[1], 0.5f, 0.5f, 0.5f);
-    shape[1].translation[0] = 0.5f;
-    
-    for (int i = 0; i < 2; i++) {
-        shape[i].x_rotate = 0;
-        shape[i].y_rotate = 0;
-        shape[i].revolution = 0;
-        shape[i].origin_scale = 0;
-        shape[i].self_scale = 0;
-        shape[i].translation[0] = (i == 0) ? -0.5f : 0.5f;
-        shape[i].translation[1] = 0.0f;
-        shape[i].translation[2] = 0.0f;
-        shape[i].x_rotationAngle = 0.0f;
-        shape[i].y_rotationAngle = 0.0f;
-        shape[i].revolutionAngle = 0.0f;
-        shape[i].origin_scale_value[0] = 1.0f;
-        shape[i].origin_scale_value[1] = 1.0f;
-        shape[i].origin_scale_value[2] = 1.0f;
-        shape[i].self_scale_value[0] = 1.0f;
-        shape[i].self_scale_value[1] = 1.0f;
-        shape[i].self_scale_value[2] = 1.0f;
-        
-        // 애니메이션 관련 변수 초기화
-        shape[i].isAnimating = false;
-        shape[i].animProgress = 0.0f;
-        shape[i].animType = 0;
-    }
+	createSphere(shape[0], 0.3f);
+	shape[0].translation[0] = -0.5f;
+
+	createCylinder(shape[1], 0.5f, 0.5f, 0.5f);
+	shape[1].translation[0] = 0.5f;
+
+	for (int i = 0; i < 2; i++) {
+		shape[i].x_rotate = 0;
+		shape[i].y_rotate = 0;
+		shape[i].revolution = 0;
+		shape[i].origin_scale = 0;
+		shape[i].self_scale = 0;
+		shape[i].translation[0] = (i == 0) ? -0.5f : 0.5f;
+		shape[i].translation[1] = 0.0f;
+		shape[i].translation[2] = 0.0f;
+		shape[i].x_rotationAngle = 0.0f;
+		shape[i].y_rotationAngle = 0.0f;
+		shape[i].revolutionAngle = 0.0f;
+		shape[i].origin_scale_value[0] = 1.0f;
+		shape[i].origin_scale_value[1] = 1.0f;
+		shape[i].origin_scale_value[2] = 1.0f;
+		shape[i].self_scale_value[0] = 1.0f;
+		shape[i].self_scale_value[1] = 1.0f;
+		shape[i].self_scale_value[2] = 1.0f;
+
+		// 애니메이션 관련 변수 초기화
+		shape[i].isAnimating = false;
+		shape[i].animProgress = 0.0f;
+		shape[i].animType = 0;
+	}
 }
 
 void rotate_Matrix(glm::mat4& matrix, glm::vec3 pre_trans, float angle, glm::vec3 rotate)
@@ -239,183 +239,164 @@ void subint(int& value) {
 }
 
 void startOriginPassAnimation() {
-    if (isGlobalAnimating) return;
+	if (isGlobalAnimating) return;
 
-    isGlobalAnimating = true;
-    currentAnimationType = 1;
+	isGlobalAnimating = true;
+	currentAnimationType = 1;
 
-    // baseRotation 생성 (drawScene과 동일)
-    glm::mat4 baseRotation = glm::mat4(1.0f);
-    baseRotation = glm::rotate(baseRotation, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    baseRotation = glm::rotate(baseRotation, glm::radians(50.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+	// baseRotation 생성 (drawScene과 동일)
+	glm::mat4 baseRotation = glm::mat4(1.0f);
+	baseRotation = glm::rotate(baseRotation, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	baseRotation = glm::rotate(baseRotation, glm::radians(50.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 
-    for (int i = 0; i < 2; i++) {
-        shape[i].isAnimating = true;
-        shape[i].animProgress = 0.0f;
-        shape[i].animType = 1;
+	for (int i = 0; i < 2; i++) {
+		shape[i].isAnimating = true;
+		shape[i].animProgress = 0.0f;
+		shape[i].animType = 1;
 
-        // baseRotation을 포함한 정확한 위치 계산
-        shape[i].getTransformedPosition(shape[i].startPos);
-    }
-    
-    for (int i = 0; i < 2; i++) {
-        int targetIndex = (i == 0) ? 1 : 0;
-        shape[i].targetPos[0] = shape[targetIndex].startPos[0];
-        shape[i].targetPos[1] = shape[targetIndex].startPos[1];
-        shape[i].targetPos[2] = shape[targetIndex].startPos[2];
-        printf("Shape %d: start(%.2f, %.2f, %.2f) -> target(%.2f, %.2f, %.2f)\n", i,
-            shape[i].startPos[0], shape[i].startPos[1], shape[i].startPos[2],
-            shape[i].targetPos[0], shape[i].targetPos[1], shape[i].targetPos[2]);
-    }
+		// baseRotation을 포함한 정확한 위치 계산
+		shape[i].getTransformedPosition(shape[i].startPos);
+	}
 
-    std::cout << "원점 통과 애니메이션 시작!" << std::endl;
+	for (int i = 0; i < 2; i++) {
+		int targetIndex = (i == 0) ? 1 : 0;
+		shape[i].targetPos[0] = shape[targetIndex].startPos[0];
+		shape[i].targetPos[1] = shape[targetIndex].startPos[1];
+		shape[i].targetPos[2] = shape[targetIndex].startPos[2];
+		printf("Shape %d: start(%.2f, %.2f, %.2f) -> target(%.2f, %.2f, %.2f)\n", i,
+			shape[i].startPos[0], shape[i].startPos[1], shape[i].startPos[2],
+			shape[i].targetPos[0], shape[i].targetPos[1], shape[i].targetPos[2]);
+	}
+
+	std::cout << "원점 통과 애니메이션 시작!" << std::endl;
 }
 
 void startUpDownAnimation() {
-    if (isGlobalAnimating) return;
+	if (isGlobalAnimating) return;
 
-    isGlobalAnimating = true;
-    currentAnimationType = 2;
+	isGlobalAnimating = true;
+	currentAnimationType = 2;
 
-    for (int i = 0; i < 2; i++) {
-        shape[i].isAnimating = true;
-        shape[i].animProgress = 0.0f;
-        shape[i].animType = 2;
+	for (int i = 0; i < 2; i++) {
+		shape[i].isAnimating = true;
+		shape[i].animProgress = 0.0f;
+		shape[i].animType = 2;
 
-        // 현재 위치를 정확히 계산
-        shape[i].getTransformedPosition(shape[i].startPos);
-        
-        printf("Shape %d start position: (%.2f, %.2f, %.2f)\n", i,
-            shape[i].startPos[0], shape[i].startPos[1], shape[i].startPos[2]);
-    }
-    
-    // 목표 위치 설정 (상대방의 위치)
-    for (int i = 0; i < 2; i++) {
-        int targetIndex = (i == 0) ? 1 : 0;
-        shape[i].targetPos[0] = shape[targetIndex].startPos[0];
-        shape[i].targetPos[1] = shape[targetIndex].startPos[1];
-        shape[i].targetPos[2] = shape[targetIndex].startPos[2];
-        
-        printf("Shape %d target position: (%.2f, %.2f, %.2f)\n", i,
-            shape[i].targetPos[0], shape[i].targetPos[1], shape[i].targetPos[2]);
-    }
+		// 현재 위치를 정확히 계산
+		shape[i].getTransformedPosition(shape[i].startPos);
 
-    std::cout << "위/아래 이동 애니메이션 시작!" << std::endl;
+		printf("Shape %d start position: (%.2f, %.2f, %.2f)\n", i,
+			shape[i].startPos[0], shape[i].startPos[1], shape[i].startPos[2]);
+	}
+
+	// 목표 위치 설정 (상대방의 위치)
+	for (int i = 0; i < 2; i++) {
+		int targetIndex = (i == 0) ? 1 : 0;
+		shape[i].targetPos[0] = shape[targetIndex].startPos[0];
+		shape[i].targetPos[1] = shape[targetIndex].startPos[1];
+		shape[i].targetPos[2] = shape[targetIndex].startPos[2];
+
+		printf("Shape %d target position: (%.2f, %.2f, %.2f)\n", i,
+			shape[i].targetPos[0], shape[i].targetPos[1], shape[i].targetPos[2]);
+	}
+
+	std::cout << "위/아래 이동 애니메이션 시작!" << std::endl;
 }
 
 void updateAnimations() {
-    if (!isGlobalAnimating) return;
+	if (!isGlobalAnimating) return;
 
-    bool allAnimationComplete = true;
+	bool allAnimationComplete = true;
 
-    for (int i = 0; i < 2; i++) {
-        if (shape[i].isAnimating) {
-            shape[i].animProgress += shape[i].animSpeed;
+	for (int i = 0; i < 2; i++) {
+		if (shape[i].isAnimating) {
+			shape[i].animProgress += shape[i].animSpeed;
 
-            if (shape[i].animProgress >= 1.0f) {
-                // 애니메이션 완료 처리 (기존과 동일)
-                shape[i].animProgress = 1.0f;
-                shape[i].isAnimating = false;
-                
-                shape[i].revolutionAngle = 0.0f;
-                shape[i].origin_scale_value[0] = shape[i].origin_scale_value[1] = shape[i].origin_scale_value[2] = 1.0f;
-                
-                glm::mat4 baseRotation = glm::mat4(1.0f);
-                baseRotation = glm::rotate(baseRotation, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                baseRotation = glm::rotate(baseRotation, glm::radians(50.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-                
-                glm::mat4 invBaseRotation = glm::inverse(baseRotation);
-                glm::vec4 finalPos = invBaseRotation * glm::vec4(shape[i].targetPos[0], shape[i].targetPos[1], shape[i].targetPos[2], 1.0f);
-                
-                shape[i].translation[0] = finalPos.x;
-                shape[i].translation[1] = finalPos.y;
-                shape[i].translation[2] = finalPos.z;
-                
-                printf("Animation complete for shape %d: final translation (%.2f, %.2f, %.2f)\n", 
-                    i, shape[i].translation[0], shape[i].translation[1], shape[i].translation[2]);
-            }
-            else {
-                allAnimationComplete = false;
+			if (shape[i].animProgress >= 1.0f) {
+				shape[i].animProgress = 1.0f;
+				shape[i].isAnimating = false;
 
-                // 애니메이션 중 다른 변환 무력화
-                shape[i].revolutionAngle = 0.0f;
-                shape[i].origin_scale_value[0] = shape[i].origin_scale_value[1] = shape[i].origin_scale_value[2] = 1.0f;
-                shape[i].self_scale_value[0] = shape[i].self_scale_value[1] = shape[i].self_scale_value[2] = 1.0f;
-                shape[i].x_rotationAngle = shape[i].y_rotationAngle = 0.0f;
+				shape[i].revolutionAngle = 0.0f;
+				shape[i].origin_scale_value[0] = shape[i].origin_scale_value[1] = shape[i].origin_scale_value[2] = 1.0f;
 
-                glm::mat4 baseRotation = glm::mat4(1.0f);
-                baseRotation = glm::rotate(baseRotation, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                baseRotation = glm::rotate(baseRotation, glm::radians(50.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-                glm::mat4 invBaseRotation = glm::inverse(baseRotation);
+				glm::mat4 baseRotation = glm::mat4(1.0f);
+				baseRotation = glm::rotate(baseRotation, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+				baseRotation = glm::rotate(baseRotation, glm::radians(50.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 
-                if (currentAnimationType == 1) {
-                    // t 애니메이션 (기존과 동일)
-                    float t = shape[i].animProgress;
-                    glm::vec3 currentWorldPos;
-                    
-                    if (t <= 0.5f) {
-                        // 첫 번째 절반: 시작점에서 원점으로
-                        float localT = t * 2.0f;
-                        currentWorldPos.x = shape[i].startPos[0] * (1.0f - localT);
-                        currentWorldPos.y = shape[i].startPos[1] * (1.0f - localT);
-                        currentWorldPos.z = shape[i].startPos[2] * (1.0f - localT);
-                    }
-                    else {
-                        // 두 번째 절반: 원점에서 목표점으로
-                        float localT = (t - 0.5f) * 2.0f;
-                        currentWorldPos.x = shape[i].targetPos[0] * localT;
-                        currentWorldPos.y = shape[i].targetPos[1] * localT;
-                        currentWorldPos.z = shape[i].targetPos[2] * localT;
-                    }
-                    
-                    // baseRotation 역변환 적용하여 translation 계산
-                    glm::vec4 localPos = invBaseRotation * glm::vec4(currentWorldPos.x, currentWorldPos.y, currentWorldPos.z, 1.0f);
-                    shape[i].translation[0] = localPos.x;
-                    shape[i].translation[1] = localPos.y;
-                    shape[i].translation[2] = localPos.z;
-                }
-                else if (currentAnimationType == 2) {
-                    // u 애니메이션: 훨씬 간단한 포물선 경로
-                    float t = shape[i].animProgress;
-                    
-                    // 시작점과 끝점 사이의 선형 보간
-                    glm::vec3 linearPos;
-                    linearPos.x = shape[i].startPos[0] + (shape[i].targetPos[0] - shape[i].startPos[0]) * t;
-                    linearPos.y = shape[i].startPos[1] + (shape[i].targetPos[1] - shape[i].startPos[1]) * t;
-                    linearPos.z = shape[i].startPos[2] + (shape[i].targetPos[2] - shape[i].startPos[2]) * t;
-                    
-                    // 포물선 높이 추가 (sin 함수 사용으로 부드러운 곡선)
-                    float heightOffset = sin(t * M_PI) * 1.0f; // 최대 높이 1.0
-                    
-                    // 각 객체마다 다른 방향으로 이동 (첫 번째는 위, 두 번째는 아래)
-                    if (i == 0) {
-                        linearPos.y += heightOffset; // 위로
-                    } else {
-                        linearPos.y -= heightOffset; // 아래로
-                    }
-                    
-                    // baseRotation 역변환 적용
-                    glm::vec4 localPos = invBaseRotation * glm::vec4(linearPos.x, linearPos.y, linearPos.z, 1.0f);
-                    shape[i].translation[0] = localPos.x;
-                    shape[i].translation[1] = localPos.y;
-                    shape[i].translation[2] = localPos.z;
-                    
-                    // 디버그 출력 (필요시)
-                    if (i == 0 && ((int)(t * 100) % 10 == 0)) { // 10% 간격으로 출력
-                        printf("Shape %d: t=%.2f, world(%.2f,%.2f,%.2f), local(%.2f,%.2f,%.2f)\n", 
-                            i, t, linearPos.x, linearPos.y, linearPos.z,
-                            shape[i].translation[0], shape[i].translation[1], shape[i].translation[2]);
-                    }
-                }
-            }
-        }
-    }
+				glm::mat4 invBaseRotation = glm::inverse(baseRotation);
+				glm::vec4 finalPos = invBaseRotation * glm::vec4(shape[i].targetPos[0], shape[i].targetPos[1], shape[i].targetPos[2], 1.0f);
 
-    if (allAnimationComplete) {
-        isGlobalAnimating = false;
-        currentAnimationType = 0;
-        std::cout << "애니메이션 완료!" << std::endl;
-    }
+				shape[i].translation[0] = finalPos.x;
+				shape[i].translation[1] = finalPos.y;
+				shape[i].translation[2] = finalPos.z;
+
+			}
+			else {
+				allAnimationComplete = false;
+
+				shape[i].revolutionAngle = 0.0f;
+				shape[i].origin_scale_value[0] = shape[i].origin_scale_value[1] = shape[i].origin_scale_value[2] = 1.0f;
+				shape[i].self_scale_value[0] = shape[i].self_scale_value[1] = shape[i].self_scale_value[2] = 1.0f;
+				shape[i].x_rotationAngle = shape[i].y_rotationAngle = 0.0f;
+
+				glm::mat4 baseRotation = glm::mat4(1.0f);
+				baseRotation = glm::rotate(baseRotation, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+				baseRotation = glm::rotate(baseRotation, glm::radians(50.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+				glm::mat4 invBaseRotation = glm::inverse(baseRotation);
+
+				if (currentAnimationType == 1) {
+					float t = shape[i].animProgress;
+					glm::vec3 currentWorldPos;
+
+					if (t <= 0.5f) {
+						float localT = t * 2.0f;
+						currentWorldPos.x = shape[i].startPos[0] * (1.0f - localT);
+						currentWorldPos.y = shape[i].startPos[1] * (1.0f - localT);
+						currentWorldPos.z = shape[i].startPos[2] * (1.0f - localT);
+					}
+					else {
+						float localT = (t - 0.5f) * 2.0f;
+						currentWorldPos.x = shape[i].targetPos[0] * localT;
+						currentWorldPos.y = shape[i].targetPos[1] * localT;
+						currentWorldPos.z = shape[i].targetPos[2] * localT;
+					}
+
+					glm::vec4 localPos = invBaseRotation * glm::vec4(currentWorldPos.x, currentWorldPos.y, currentWorldPos.z, 1.0f);
+					shape[i].translation[0] = localPos.x;
+					shape[i].translation[1] = localPos.y;
+					shape[i].translation[2] = localPos.z;
+				}
+				else if (currentAnimationType == 2) {
+					float t = shape[i].animProgress;
+
+					glm::vec3 linearPos;
+					linearPos.x = shape[i].startPos[0] + (shape[i].targetPos[0] - shape[i].startPos[0]) * t;
+					linearPos.y = shape[i].startPos[1] + (shape[i].targetPos[1] - shape[i].startPos[1]) * t;
+					linearPos.z = shape[i].startPos[2] + (shape[i].targetPos[2] - shape[i].startPos[2]) * t;
+
+					float heightOffset = sin(t * M_PI) * 1.0f;
+
+					if (i == 0) {
+						linearPos.y += heightOffset;
+					}
+					else {
+						linearPos.y -= heightOffset;
+					}
+
+					glm::vec4 localPos = invBaseRotation * glm::vec4(linearPos.x, linearPos.y, linearPos.z, 1.0f);
+					shape[i].translation[0] = localPos.x;
+					shape[i].translation[1] = localPos.y;
+					shape[i].translation[2] = localPos.z;
+				}
+			}
+		}
+	}
+
+	if (allAnimationComplete) {
+		isGlobalAnimating = false;
+		currentAnimationType = 0;
+		std::cout << "애니메이션 완료!" << std::endl;
+	}
 }
 
 std::random_device rd;
@@ -589,68 +570,68 @@ GLvoid drawScene()
 
 	// GLU 객체들 렌더링
 	for (int i = 0; i < 2; i++) {
-        if (shape[i].obj) {
-            glm::mat4 modelMatrix = baseRotation;
-            
-            // 올바른 변환 순서: 공전 -> 이동 -> 자전 -> 스케일
-            
-            // 1. 원점 기준 확대/축소 (먼저 적용)
-            modelMatrix = glm::scale(modelMatrix, glm::vec3(
-                shape[i].origin_scale_value[0], 
-                shape[i].origin_scale_value[1], 
-                shape[i].origin_scale_value[2]
-            ));
-            
-            // 2. 공전 (원점을 중심으로)
-            modelMatrix = glm::rotate(modelMatrix, glm::radians(shape[i].revolutionAngle), glm::vec3(0.0f, 1.0f, 0.0f));
-            
-            // 3. 이동 (공전 후 해당 위치로)
-            modelMatrix = glm::translate(modelMatrix, glm::vec3(
-                shape[i].translation[0], 
-                shape[i].translation[1], 
-                shape[i].translation[2]
-            ));
-            
-            // 4. 자전 (객체 자신의 중심을 기준으로)
-            modelMatrix = glm::rotate(modelMatrix, glm::radians(shape[i].x_rotationAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-            modelMatrix = glm::rotate(modelMatrix, glm::radians(shape[i].y_rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
-            
-            // 5. 자체 크기 조절 (마지막에 적용)
-            modelMatrix = glm::scale(modelMatrix, glm::vec3(
-                shape[i].self_scale_value[0], 
-                shape[i].self_scale_value[1], 
-                shape[i].self_scale_value[2]
-            ));
+		if (shape[i].obj) {
+			glm::mat4 modelMatrix = baseRotation;
 
-            // 최종 행렬을 OpenGL에 전달
-            glm::mat4 finalMatrix = projection * view * modelMatrix;
-            
-            // OpenGL 고정 기능 파이프라인으로 전환 (GLU 사용을 위해)
-            glUseProgram(0);
-            glMatrixMode(GL_MODELVIEW);
-            glLoadMatrixf(glm::value_ptr(finalMatrix));
-            
-            // GLU 객체 렌더링
-            switch (shape[i].type) {
-            case 0: // Sphere
-                gluSphere(shape[i].obj, shape[i].size, 20, 20);
-                break;
-            case 1: // Cylinder
-                gluCylinder(shape[i].obj, shape[i].size * 0.6f, shape[i].size * 0.6f, shape[i].size, 20, 20);
-                break;
-            case 2: // Cone
-                gluCylinder(shape[i].obj, shape[i].size, 0.0f, shape[i].size, 20, 20);
-                break;
-            case 3:    
-                gluSphere(shape[i].obj, shape[i].size, 4, 4);
-            }
-            
-            // 셰이더 프로그램 다시 활성화
-            glUseProgram(shaderProgramID);
-        }
-    }
+			// 올바른 변환 순서: 공전 -> 이동 -> 자전 -> 스케일
 
-    glutSwapBuffers();
+			// 1. 원점 기준 확대/축소 (먼저 적용)
+			modelMatrix = glm::scale(modelMatrix, glm::vec3(
+				shape[i].origin_scale_value[0],
+				shape[i].origin_scale_value[1],
+				shape[i].origin_scale_value[2]
+			));
+
+			// 2. 공전 (원점을 중심으로)
+			modelMatrix = glm::rotate(modelMatrix, glm::radians(shape[i].revolutionAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			// 3. 이동 (공전 후 해당 위치로)
+			modelMatrix = glm::translate(modelMatrix, glm::vec3(
+				shape[i].translation[0],
+				shape[i].translation[1],
+				shape[i].translation[2]
+			));
+
+			// 4. 자전 (객체 자신의 중심을 기준으로)
+			modelMatrix = glm::rotate(modelMatrix, glm::radians(shape[i].x_rotationAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+			modelMatrix = glm::rotate(modelMatrix, glm::radians(shape[i].y_rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			// 5. 자체 크기 조절 (마지막에 적용)
+			modelMatrix = glm::scale(modelMatrix, glm::vec3(
+				shape[i].self_scale_value[0],
+				shape[i].self_scale_value[1],
+				shape[i].self_scale_value[2]
+			));
+
+			// 최종 행렬을 OpenGL에 전달
+			glm::mat4 finalMatrix = projection * view * modelMatrix;
+
+			// OpenGL 고정 기능 파이프라인으로 전환 (GLU 사용을 위해)
+			glUseProgram(0);
+			glMatrixMode(GL_MODELVIEW);
+			glLoadMatrixf(glm::value_ptr(finalMatrix));
+
+			// GLU 객체 렌더링
+			switch (shape[i].type) {
+			case 0: // Sphere
+				gluSphere(shape[i].obj, shape[i].size, 20, 20);
+				break;
+			case 1: // Cylinder
+				gluCylinder(shape[i].obj, shape[i].size * 0.6f, shape[i].size * 0.6f, shape[i].size, 20, 20);
+				break;
+			case 2: // Cone
+				gluCylinder(shape[i].obj, shape[i].size, 0.0f, shape[i].size, 20, 20);
+				break;
+			case 3:
+				gluSphere(shape[i].obj, shape[i].size, 4, 4);
+			}
+
+			// 셰이더 프로그램 다시 활성화
+			glUseProgram(shaderProgramID);
+		}
+	}
+
+	glutSwapBuffers();
 }
 
 GLvoid Reshape(int w, int h)
@@ -778,6 +759,15 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		startUpDownAnimation();
 		break;
 	case 'v':
+		for (int i = 0; i < 2; i++) {
+			if (i == 0)
+				shape[i].self_scale = 1; // 확대
+			else
+				shape[i].self_scale = -1; // 축소
+			shape[i].x_rotate = 1;
+			shape[i].y_rotate = 1;
+			shape[i].revolution = 1;
+		}
 		break;
 	case 'c':
 		for (int i = 0; i < 2; i++) {
@@ -788,13 +778,13 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 			}
 			else if (shape[i].type == 1) {
 				createCylinder(shape[i], 0.5f, 0.5f, 0.5f);
-				
+
 			}
 			else if (shape[i].type == 2) {
-				createCone(shape[i], 0.5f, 1.0f);
+				createCone(shape[i], 0.5f, 0.5f);
 			}
 			else if (shape[i].type == 3) {
-				createSphere(shape[i], 0.3f);
+				createsquare(shape[i], 0.3f);
 			}
 		}
 		break;
@@ -802,6 +792,7 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		reset();
 		break;
 	case 'q': // 프로그램 종료
+		glutLeaveMainLoop();
 		break;
 		glutPostRedisplay();
 	}
@@ -809,59 +800,63 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 
 GLvoid Timer(int value)
 {
-    // 애니메이션 업데이트 먼저 처리
-    updateAnimations();
-    
-    // 애니메이션 중이 아닐 때만 기본 회전/스케일 처리
-    if (!isGlobalAnimating) {
-        for (int i = 0; i < 2; i++) {
-            shape[i].x_rotationAngle += shape[i].x_rotate * 2.0f;
-            if (shape[i].x_rotationAngle >= 360.0f) shape[i].x_rotationAngle -= 360.0f;
-            if (shape[i].x_rotationAngle < 0.0f) shape[i].x_rotationAngle += 360.0f;
-            
-            shape[i].y_rotationAngle += shape[i].y_rotate * 2.0f;
-            if (shape[i].y_rotationAngle >= 360.0f) shape[i].y_rotationAngle -= 360.0f;
-            if (shape[i].y_rotationAngle < 0.0f) shape[i].y_rotationAngle += 360.0f;
-            
-            shape[i].revolutionAngle += shape[i].revolution * 2.0f;
-            if (shape[i].revolutionAngle >= 360.0f) shape[i].revolutionAngle -= 360.0f;
-            if (shape[i].revolutionAngle < 0.0f) shape[i].revolutionAngle += 360.0f;
-            
-            // 스케일 처리...
-            if (shape[i].origin_scale == 1) {
-                shape[i].origin_scale_value[0] += 0.01f;
-                shape[i].origin_scale_value[1] += 0.01f;
-                shape[i].origin_scale_value[2] += 0.01f;
-            }
-            else if (shape[i].origin_scale == -1) {
-                shape[i].origin_scale_value[0] -= 0.01f;
-                shape[i].origin_scale_value[1] -= 0.01f;
-                shape[i].origin_scale_value[2] -= 0.01f;
-                if (shape[i].origin_scale_value[0] < 0.1f) {
-                    shape[i].origin_scale_value[0] = 0.1f;
-                    shape[i].origin_scale_value[1] = 0.1f;
-                    shape[i].origin_scale_value[2] = 0.1f;
-                }
-            }
-            
-            if (shape[i].self_scale == 1) {
-                shape[i].self_scale_value[0] += 0.01f;
-                shape[i].self_scale_value[1] += 0.01f;
-                shape[i].self_scale_value[2] += 0.01f;
-            }
-            else if (shape[i].self_scale == -1) {
-                shape[i].self_scale_value[0] -= 0.01f;
-                shape[i].self_scale_value[1] -= 0.01f;
-                shape[i].self_scale_value[2] -= 0.01f;
-                if (shape[i].self_scale_value[0] < 0.1f) {
-                    shape[i].self_scale_value[0] = 0.1f;
-                    shape[i].self_scale_value[1] = 0.1f;
-                    shape[i].self_scale_value[2] = 0.1f;
-                }
-            }
-        }
-    }
+	// 애니메이션 업데이트 먼저 처리
+	updateAnimations();
 
-    glutPostRedisplay();
-    glutTimerFunc(16, Timer, 0);
+	// 애니메이션 중이 아닐 때만 기본 회전/스케일 처리
+	if (!isGlobalAnimating) {
+		for (int i = 0; i < 2; i++) {
+			shape[i].x_rotationAngle += shape[i].x_rotate * 2.0f;
+			if (shape[i].x_rotationAngle >= 360.0f) shape[i].x_rotationAngle -= 360.0f;
+			if (shape[i].x_rotationAngle < 0.0f) shape[i].x_rotationAngle += 360.0f;
+
+			shape[i].y_rotationAngle += shape[i].y_rotate * 2.0f;
+			if (shape[i].y_rotationAngle >= 360.0f) shape[i].y_rotationAngle -= 360.0f;
+			if (shape[i].y_rotationAngle < 0.0f) shape[i].y_rotationAngle += 360.0f;
+
+			shape[i].revolutionAngle += shape[i].revolution * 2.0f;
+			if (shape[i].revolutionAngle >= 360.0f) shape[i].revolutionAngle -= 360.0f;
+			if (shape[i].revolutionAngle < 0.0f) shape[i].revolutionAngle += 360.0f;
+
+			// 스케일 처리...
+			if (shape[i].origin_scale == 1) {
+				if (shape[i].origin_scale_value[0] < 2.0f) {
+					shape[i].origin_scale_value[0] += 0.01f;
+					shape[i].origin_scale_value[1] += 0.01f;
+					shape[i].origin_scale_value[2] += 0.01f;
+				}
+			}
+			else if (shape[i].origin_scale == -1) {
+				shape[i].origin_scale_value[0] -= 0.01f;
+				shape[i].origin_scale_value[1] -= 0.01f;
+				shape[i].origin_scale_value[2] -= 0.01f;
+				if (shape[i].origin_scale_value[0] < 0.1f) {
+					shape[i].origin_scale_value[0] = 0.1f;
+					shape[i].origin_scale_value[1] = 0.1f;
+					shape[i].origin_scale_value[2] = 0.1f;
+				}
+			}
+
+			if (shape[i].self_scale == 1) {
+				if (shape[i].self_scale_value[0] < 2.0f) {
+					shape[i].self_scale_value[0] += 0.01f;
+					shape[i].self_scale_value[1] += 0.01f;
+					shape[i].self_scale_value[2] += 0.01f;
+				}
+			}
+			else if (shape[i].self_scale == -1) {
+				shape[i].self_scale_value[0] -= 0.01f;
+				shape[i].self_scale_value[1] -= 0.01f;
+				shape[i].self_scale_value[2] -= 0.01f;
+				if (shape[i].self_scale_value[0] < 0.1f) {
+					shape[i].self_scale_value[0] = 0.1f;
+					shape[i].self_scale_value[1] = 0.1f;
+					shape[i].self_scale_value[2] = 0.1f;
+				}
+			}
+		}
+	}
+
+	glutPostRedisplay();
+	glutTimerFunc(16, Timer, 0);
 }
