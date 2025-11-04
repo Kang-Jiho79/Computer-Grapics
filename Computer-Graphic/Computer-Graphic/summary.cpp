@@ -47,24 +47,29 @@ public:
 	std::vector<float> vertices;
 	std::vector<float> colors;
 	std::vector<int> index;
+	std::vector<std::vector<int>> drawface;
 	float center[3]{};
 	float size[3]{};
 	float color[3]{};
 	GLuint VAO, VBO[2], EBO;
+	GLUquadricObj* obj = nullptr;
 	int x_rotate = 0, y_rotate = 0, revolution = 0;
+	int origin_scale = 0, self_scale = 0;
 	float translation[3] = { 0.0f };
 	float x_rotationAngle = { 0.0f };
 	float y_rotationAngle = { 0.0f };
 	float revolutionAngle = { 0.0f };
+	float origin_scale_value[3]{ 1.0f,1.0f,1.0f };
+	float self_scale_value[3]{ 1.0f, 1.0f, 1.0f };
 };
 
 Shape axis;
-Shape under_body;
-Shape mid_body;
-Shape top_body[2];
-Shape gun_barrel[2];
-Shape flag[2];
-Shape* shapes[8] = { &under_body, &mid_body, &top_body[0], &top_body[1], &gun_barrel[0], &gun_barrel[1], &flag[0], &flag[1] };
+Shape test;
+Shape* shapes[1] = { &test };
+
+bool depthTest = true;
+bool culling = false;
+bool wireframe = false;
 
 GLvoid initBuffer(Shape& shape);
 
@@ -109,29 +114,29 @@ void createCube(Shape& s)
 		x2,  y2, z1,  // 6
 		x2,  y2, z2,   // 7
 
-		 // 뒷면 (면 3) - 파란색
-		  x2, y1, z1,  // 8
-		 x1, y1, z1,  // 9
-		 x1,  y2, z1,  // 10
-		  x2,  y2, z1,  // 11
+		// 뒷면 (면 3) - 파란색
+		x2, y1, z1,  // 8
+		x1, y1, z1,  // 9
+		x1,  y2, z1,  // 10
+		x2,  y2, z1,  // 11
 
-		  // 왼쪽면 (면 4) - 노란색
-		  x1, y1, z1,  // 12
-		  x1, y1, z2,   // 13
-		  x1,  y2, z2,   // 14
-		  x1,  y2, z1,  // 15
+		// 왼쪽면 (면 4) - 노란색
+		x1, y1, z1,  // 12
+		x1, y1, z2,   // 13
+		x1,  y2, z2,   // 14
+		x1,  y2, z1,  // 15
 
-		  // 윗면 (면 5) - 자홍색
-		  x1,  y2, z2,   // 16
-		   x2,  y2, z2,   // 17
-		   x2,  y2, z1,  // 18
-		  x1,  y2, z1,  // 19
+		// 윗면 (면 5) - 자홍색
+		x1,  y2, z2,   // 16
+		x2,  y2, z2,   // 17
+		x2,  y2, z1,  // 18
+		x1,  y2, z1,  // 19
 
-		  // 아랫면 (면 6) - 청록색
-		  x1, y1, z1,  // 20
-		   x2, y1, z1,  // 21
-		   x2, y1, z2,   // 22
-		  x1, y1, z2    // 23
+		// 아랫면 (면 6) - 청록색
+		x1, y1, z1,  // 20
+		x2, y1, z1,  // 21
+		x2, y1, z2,   // 22
+		x1, y1, z2    // 23
 	};
 	s.colors = {
 		// 앞면 - 빨간색
@@ -156,90 +161,117 @@ void createCube(Shape& s)
 		16, 17, 18, 18, 19, 16, // 윗면
 		20, 21, 22, 22, 23, 20  // 아랫면
 	};
+	s.drawface = {
+		{0, 1, 2, 2, 3, 0},
+		{4, 5, 6, 6, 7, 4},
+		{8, 9, 10, 10, 11, 8},
+		{12, 13, 14, 14, 15, 12},
+		{16, 17, 18, 18, 19, 16},
+		{20, 21, 22, 22, 23, 20}
+	};
 	initBuffer(s);
+}	
+
+void createPyramid(Shape& shape)
+{
+	shape.vertices = {
+		// 바닥면
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+		// 면 1
+		 0.0f, 0.5f,  0.0f,
+		 -0.5f, -0.5f, 0.5f,
+		 0.5f, -0.5f, 0.5f,
+		 // 면 2
+		0.0f, 0.5f, 0.0f,
+		0.5f, -0.5f, 0.5f,
+		0.5f, -0.5f, -0.5f,
+		// 면 3
+		0.0f, 0.5f, 0.0f,
+		0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		// 면 4
+		0.0f, 0.5f, 0.0f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f, 0.5f
+	};
+	shape.colors = {
+		// 바닥면 - 회색
+		0.5f, 0.5f, 0.5f,  0.5f, 0.5f, 0.5f,  0.5f, 0.5f, 0.5f,  0.5f, 0.5f, 0.5f,
+		// 면 1 - 빨간색
+		1.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,
+		// 면 2 - 초록색
+		0.0f, 1.0f, 0.0f,  0.0f, 1.0f, 0.0f,  0.0f, 1.0f, 0.0f,
+		// 면 3 - 파란색
+		0.0f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f,
+		// 면 4 - 노란색
+		1.0f, 1.0f, 0.0f,  1.0f, 1.0f, 0.0f,  1.0f, 1.0f, 0.0f
+	};
+	shape.index = {
+		0, 1, 2,  2, 3, 0,       // 바닥면
+		4, 5, 6,                 // 면 1
+		7, 8, 9,                 // 면 2
+		10, 11, 12,              // 면 3
+		13, 14, 15               // 면 4
+	};
+	initBuffer(shape);
+}
+
+void createSphere(Shape& shape, float radius = 0.5f) {
+	shape.obj = gluNewQuadric();
+	gluQuadricDrawStyle(shape.obj, GLU_LINE);
+	gluQuadricNormals(shape.obj, GLU_SMOOTH);
+	gluQuadricTexture(shape.obj, GL_FALSE);
+	shape.size[0] = radius;
+	shape.size[1] = radius;
+	shape.size[2] = radius;
+}
+
+void createCylinder(Shape& shape, float baseRadius = 0.3f, float topRadius = 0.3f, float height = 1.0f) {
+	shape.obj = gluNewQuadric();
+	gluQuadricDrawStyle(shape.obj, GLU_LINE);
+	gluQuadricNormals(shape.obj, GLU_SMOOTH);
+	gluQuadricTexture(shape.obj, GL_FALSE);
+	shape.size[0] = height;
+	shape.size[1] = baseRadius;
+	shape.size[2] = topRadius;
+}
+
+void createCone(Shape& shape, float baseRadius = 0.5f, float height = 0.5f) {
+	shape.obj = gluNewQuadric();
+	gluQuadricDrawStyle(shape.obj, GLU_LINE);
+	gluQuadricNormals(shape.obj, GLU_SMOOTH);
+	gluQuadricTexture(shape.obj, GL_FALSE);
+	shape.size[0] = height;
+	shape.size[1] = baseRadius;
 }
 
 void reset() {
-	under_body.center[0] = 0.0f;
-	under_body.center[1] = 0.0f;
-	under_body.center[2] = 0.0f;
-	under_body.size[0] = 0.5f;
-	under_body.size[1] = 0.2f;
-	under_body.size[2] = 0.3f;
-	under_body.color[0] = getRandomcolor();
-	under_body.color[1] = getRandomcolor();
-	under_body.color[2] = getRandomcolor();
-	mid_body.size[0] = 0.3f;
-	mid_body.size[1] = 0.2f;
-	mid_body.size[2] = 0.2f;
-	mid_body.center[0] = 0.0f;
-	mid_body.center[1] = under_body.center[1] + under_body.size[1] + mid_body.size[1];
-	mid_body.center[2] = 0.0f;
-	mid_body.color[0] = getRandomcolor();
-	mid_body.color[1] = getRandomcolor();
-	mid_body.color[2] = getRandomcolor();
-	top_body[0].size[0] = 0.15f;
-	top_body[0].size[1] = 0.1f;
-	top_body[0].size[2] = 0.15f;
-	top_body[0].center[0] = -0.2f;
-	top_body[0].center[1] = mid_body.center[1] + mid_body.size[1] + top_body[0].size[1];
-	top_body[0].center[2] = 0.0f;
-	top_body[1].size[0] = 0.15f;
-	top_body[1].size[1] = 0.1f;
-	top_body[1].size[2] = 0.15f;
-	top_body[1].center[0] = 0.2f;
-	top_body[1].center[1] = mid_body.center[1] + mid_body.size[1] + top_body[1].size[1];
-	top_body[1].center[2] = 0.0f;
-	top_body[0].color[0] = getRandomcolor();
-	top_body[0].color[1] = getRandomcolor();
-	top_body[0].color[2] = getRandomcolor();
-	top_body[1].color[0] = top_body[0].color[0];
-	top_body[1].color[1] = top_body[0].color[1];
-	top_body[1].color[2] = top_body[0].color[2];
-	gun_barrel[0].size[0] = 0.05f;
-	gun_barrel[0].size[1] = 0.05f;
-	gun_barrel[0].size[2] = 0.3f;
-	gun_barrel[0].center[0] = top_body[0].center[0];
-	gun_barrel[0].center[1] = top_body[0].center[1];
-	gun_barrel[0].center[2] = top_body[0].center[2] + top_body[0].size[2] + gun_barrel[0].size[2];
-	gun_barrel[1].size[0] = 0.05f;
-	gun_barrel[1].size[1] = 0.05f;
-	gun_barrel[1].size[2] = 0.3f;
-	gun_barrel[1].center[0] = top_body[1].center[0];
-	gun_barrel[1].center[1] = top_body[1].center[1];
-	gun_barrel[1].center[2] = top_body[1].center[2] + top_body[1].size[2] + gun_barrel[1].size[2];
-	gun_barrel[0].color[0] = getRandomcolor();
-	gun_barrel[0].color[1] = getRandomcolor();
-	gun_barrel[0].color[2] = getRandomcolor();
-	gun_barrel[1].color[0] = gun_barrel[0].color[0];
-	gun_barrel[1].color[1] = gun_barrel[0].color[1];
-	gun_barrel[1].color[2] = gun_barrel[0].color[2];
-	flag[0].size[0] = 0.01f;
-	flag[0].size[1] = 0.2f;
-	flag[0].size[2] = 0.01f;
-	flag[0].center[0] = top_body[0].center[0];
-	flag[0].center[1] = top_body[0].center[1] + top_body[0].size[1] + flag[0].size[1];
-	flag[0].center[2] = top_body[0].center[2];
-	flag[1].size[0] = 0.01f;
-	flag[1].size[1] = 0.2f;
-	flag[1].size[2] = 0.01f;
-	flag[1].center[0] = top_body[1].center[0];
-	flag[1].center[1] = top_body[1].center[1] + top_body[1].size[1] + flag[1].size[1];
-	flag[1].center[2] = top_body[1].center[2];
-	flag[0].color[0] = getRandomcolor();
-	flag[0].color[1] = getRandomcolor();
-	flag[0].color[2] = getRandomcolor();
-	flag[1].color[0] = flag[0].color[0];
-	flag[1].color[1] = flag[0].color[1];
-	flag[1].color[2] = flag[0].color[2];
-	createCube(under_body);
-	createCube(mid_body);
-	createCube(top_body[0]);
-	createCube(top_body[1]);
-	createCube(gun_barrel[0]);
-	createCube(gun_barrel[1]);
-	createCube(flag[0]);
-	createCube(flag[1]);
+	test.center[0] = 0.0f;
+	test.center[1] = 0.0f;
+	test.center[2] = 0.0f;
+	test.size[0] = 0.5f;
+	test.size[1] = 0.5f;
+	test.size[2] = 0.5f;
+	test.color[0] = getRandomcolor();
+	test.color[1] = getRandomcolor();
+	test.color[2] = getRandomcolor();
+	createCube(test);
+}
+
+void addint(int& value) {
+	if (value == 0)
+		value = 1;
+	else
+		value = 0;
+}
+void subint(int& value) {
+	if (value == 0)
+		value = -1;
+	else
+		value = 0;
 }
 
 void rotate_Matrix(glm::mat4& matrix, glm::vec3 pre_trans, float angle, glm::vec3 rotate)
@@ -256,20 +288,38 @@ void scale_Matrix(glm::mat4& matrix, glm::vec3 pre_trans, glm::vec3 scale)
 	matrix = glm::translate(matrix, -pre_trans);
 }
 
-void addint(int& value) {
-	if (value == 0)
-		value = 1;
-	else
-		value = 0;
-}
-void subint(int& value) {
-	if (value == 0)
-		value = -1;
-	else
-		value = 0;
+void drawCubeFace(Shape& s, int face)
+{
+	GLuint temp;
+	glGenBuffers(1, &temp);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, temp);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, s.drawface[face].size() * sizeof(unsigned int), s.drawface[face].data(), GL_STATIC_DRAW);
+	glDrawElements(GL_TRIANGLES, s.drawface[face].size(), GL_UNSIGNED_INT, 0);
+	glDeleteBuffers(1, &temp);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s.EBO);
 }
 
+void drawCubeFace(int faceIndex, glm::mat4 transform, unsigned int modelLocation) {
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transform));
 
+	// 각 면별 인덱스 오프셋과 개수
+	int indexOffset = faceIndex * 6; // 각 면마다 6개의 인덱스
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(indexOffset * sizeof(unsigned int)));
+}
+
+void drawPyramidFace(int faceIndex, glm::mat4 transform, unsigned int modelLocation) {
+	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(transform));
+
+	if (faceIndex == 0) {
+		// 바닥면 (사각형)
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	}
+	else {
+		// 삼각형 면들
+		int indexOffset = 6 + (faceIndex - 1) * 3; // 바닥면 6개 + 삼각형면들
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(indexOffset * sizeof(unsigned int)));
+	}
+}
 
 void main(int argc, char** argv)
 {
@@ -291,22 +341,6 @@ void main(int argc, char** argv)
 	make_shaderProgram();
 
 	createAxis(axis);
-
-	std::cout << "=== 조작법 ===" << std::endl;
-	std::cout << "←/↑/→/↓: 탱크가 xz평면에서 x축과 z축 방향으로 이동한다." << std::endl;
-	std::cout << "t: 중앙몸체가 y축에 대하여 회전한다." << std::endl;
-	std::cout << "l: 상부몸체가 이동하여 서로 위치를 바꾼다." << std::endl;
-	std::cout << "g: 상부몸체 앞의 포신이 y축에 대하여 회전한다. 양쪽의 포신은 서로 반대방향으로 회전한다." << std::endl;
-	std::cout << "p: 상부몸체 위의 깃대가 x축에 대하여 회전한다. 양쪽의 깃대는 서로 반대방향으로 회전한다." << std::endl;
-	std::cout << "=== 카메라 변환 ===" << std::endl;
-	std::cout << "z/Z: 카메라가 z축 양/음방향으로 이동" << std::endl;
-	std::cout << "x/X: 카메라가 x축 양/음방향으로 이동" << std::endl;
-	std::cout << "y/Y: 카메라기준 y축에 대하여 회전(카메라가 제자리에서 자전)" << std::endl;
-	std::cout << "r/R: 화면의 중심의 y축에 대하여 카메라가 회전(중점에 대하여 공전)" << std::endl;
-	std::cout << "a: 카메라 공전 애니메이션" << std::endl;
-	std::cout << "o: 모든 움직임 멈추기" << std::endl;
-	std::cout << "c: 모든 움직임이 초기화된다." << std::endl;
-	std::cout << "q: 프로그램 종료하기" << std::endl;
 
 	reset(); // 초기 도형 상태 설정
 
@@ -408,8 +442,6 @@ GLvoid initBuffer(Shape& shape)
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape.EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape.index.size() * sizeof(unsigned int), shape.index.data(), GL_STATIC_DRAW);
-
-
 }
 
 GLvoid drawScene()
@@ -417,6 +449,29 @@ GLvoid drawScene()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(shaderProgramID);
+
+	if (depthTest) {
+		glEnable(GL_DEPTH_TEST);
+	}
+	else {
+		glDisable(GL_DEPTH_TEST);
+	}
+
+	if (culling) {
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
+		glFrontFace(GL_CCW);
+	}
+	else {
+		glDisable(GL_CULL_FACE);
+	}
+
+	if (wireframe) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	}
+	else {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
 
 	glm::mat4 view = glm::mat4(1.0f);
 	glm::mat4 projection = glm::mat4(1.0f);
@@ -438,33 +493,59 @@ GLvoid drawScene()
 
 	for (auto& shape : shapes) {
 		glm::mat4 modelMatrix = baseRotation;
+
+		// 1. 원점 기준 스케일링
+		modelMatrix = glm::scale(modelMatrix, glm::vec3(
+			shape->origin_scale_value[0],
+			shape->origin_scale_value[1],
+			shape->origin_scale_value[2]
+		));
+		// 2. 공전
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(shape->revolutionAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+		// 3. 이동
 		modelMatrix = glm::translate(modelMatrix, glm::vec3(
 			shape->translation[0],
 			shape->translation[1],
 			shape->translation[2]
 		));
+		// 4. 자전
 		rotate_Matrix(modelMatrix, glm::vec3(shape->center[0], shape->center[1], shape->center[2]), shape->x_rotationAngle, glm::vec3(1.0f, 0.0f, 0.0f));
 		rotate_Matrix(modelMatrix, glm::vec3(shape->center[0], shape->center[1], shape->center[2]), shape->y_rotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-		if (shape == &gun_barrel[0]) {
-			rotate_Matrix(modelMatrix, glm::vec3(top_body[0].center[0], top_body[0].center[1], top_body[0].center[2]), 
-				shape->revolutionAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-		}
-		else if (shape == &gun_barrel[1]) {
-			rotate_Matrix(modelMatrix, glm::vec3(top_body[1].center[0], top_body[1].center[1], top_body[1].center[2]),
-				shape->revolutionAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-		}
-		if (shape == &flag[0]) {
-			rotate_Matrix(modelMatrix, glm::vec3(top_body[0].center[0], top_body[0].center[1], top_body[0].center[2]),
-				shape->revolutionAngle, glm::vec3(1.0f, 0.0f, 0.0f));
-		}
-		else if (shape == &flag[1]) {
-			rotate_Matrix(modelMatrix, glm::vec3(top_body[1].center[0], top_body[1].center[1], top_body[1].center[2]),
-				shape->revolutionAngle, glm::vec3(1.0f, 0.0f, 0.0f));
-		}
+		// 5. 도형 기준 스케일링
+		scale_Matrix(modelMatrix, glm::vec3(shape->center[0], shape->center[1], shape->center[2]), glm::vec3(
+			shape->self_scale_value[0],
+			shape->self_scale_value[1],
+			shape->self_scale_value[2]
+		));
 		glm::mat4 finalMatrix = projection * view * modelMatrix;
+		// 쉐이더 사용
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(finalMatrix));
 		glBindVertexArray(shape->VAO);
 		glDrawElements(GL_TRIANGLES, shape->index.size(), GL_UNSIGNED_INT, 0);
+
+		// GLU 객체 그리기
+		// OpenGL 고정 기능 파이프라인으로 전환 (GLU 사용을 위해)
+		//glUseProgram(0);
+		//glMatrixMode(GL_MODELVIEW);
+		//glLoadMatrixf(glm::value_ptr(finalMatrix));
+
+		//// GLU 객체 렌더링
+		//switch (shape->type) {
+		//case 0: // Sphere
+		//	gluSphere(shape->obj, shape->size[0], 20, 20);
+		//	break;
+		//case 1: // Cylinder
+		//	gluCylinder(shape->obj, shape->size[0] * 0.6f, shape->size[0] * 0.6f, shape->size[0], 20, 20);
+		//	break;
+		//case 2: // Cone
+		//	gluCylinder(shape->obj, shape->size[0], 0.0f, shape->size[0], 20, 20);
+		//	break;
+		//case 3:
+		//	gluSphere(shape->obj, shape->size[0], 4, 4);
+		//}
+
+		//// 셰이더 프로그램 다시 활성화
+		//glUseProgram(shaderProgramID);
 	}
 
 	glutSwapBuffers();
@@ -478,36 +559,42 @@ GLvoid Reshape(int w, int h)
 GLvoid Keyboard(unsigned char key, int x, int y)
 {
 	switch (key) {
-	case 't': // 중간 몸체 y축 회전
+	case 'x': // x축 회전
 		for (auto& shape : shapes) {
-			if (shape != &under_body) {
+			if (shape == &test) {
+				addint(shape->x_rotate);
+			}
+		}
+		break;
+	case 'y': // y축 회전
+		for (auto& shape : shapes) {
+			if (shape == &test) {
 				addint(shape->y_rotate);
 			}
 		}
 		break;
-	case 'l': // 상부 몸체 위치 변경
-		break;
-	case 'g': // 포신 y축 회전
+	case 'r': // y축 공전
 		for (auto& shape : shapes) {
-			if (shape == &gun_barrel[0]) {
-				subint(shape->revolution);
-			}
-			else if (shape == &gun_barrel[1]) {
+			if (shape == &test) {
 				addint(shape->revolution);
 			}
 		}
 		break;
-	case 'p': // 깃대 x축 회전
+	case 's': 
 		for (auto& shape : shapes) {
-			if (shape == &flag[0]) {
-				addint(shape->revolution);
-			}
-			else if (shape == &flag[1]) {
-				subint(shape->revolution);
+			if (shape == &test) {
+				addint(shape->self_scale);
 			}
 		}
 		break;
-	case 's':
+	case 'o':
+		for (auto& shape : shapes) {
+			if (shape == &test) {
+				addint(shape->origin_scale);
+			}
+		}
+		break;
+	case 'c':
 		reset();
 		break;
 	case 'q': // 프로그램 종료
@@ -563,10 +650,22 @@ GLvoid Timer(int value)
 		}
 		if (shape->revolution != 0) {
 			shape->revolutionAngle += 2.0f * shape->revolution;
-			if (shape->revolutionAngle >= 90.0f)
-				shape->revolution = -1;
-			else if (shape->revolutionAngle < -90.0f)
-				shape->revolution = 1;
+			if (shape->revolutionAngle >= 360.0f)
+				shape->revolution -= 360.0f;
+			else if (shape->revolutionAngle < 0.0f)
+				shape->revolution += 360.0f;
+		}
+		if (shape->origin_scale != 0) {
+			float scaleFactor = 0.01f * shape->origin_scale;
+			shape->origin_scale_value[0] += scaleFactor;
+			shape->origin_scale_value[1] += scaleFactor;
+			shape->origin_scale_value[2] += scaleFactor;
+		}
+		if (shape->self_scale != 0) {
+			float scaleFactor = 0.01f * shape->self_scale;
+			shape->self_scale_value[0] += scaleFactor;
+			shape->self_scale_value[1] += scaleFactor;
+			shape->self_scale_value[2] += scaleFactor;
 		}
 	}
 
