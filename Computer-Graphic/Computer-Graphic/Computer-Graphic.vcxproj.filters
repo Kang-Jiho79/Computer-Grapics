@@ -90,5 +90,11 @@
     <ClCompile Include="test.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="21.cpp">
+      <Filter>소스 파일\OpenGL cordinate transformation</Filter>
+    </ClCompile>
+    <ClCompile Include="소스.cpp">
+      <Filter>소스 파일\OpenGL cordinate transformation</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
