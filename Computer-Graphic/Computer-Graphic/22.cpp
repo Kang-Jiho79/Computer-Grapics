@@ -2,14 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include <vector>
 #include <random>
-#include <cmath>
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
+#include <vector>
 #include <gl/glew.h>
 #include <gl/freeglut.h>
 #include <gl/freeglut_ext.h>
@@ -17,816 +11,693 @@
 #include <gl/glm/ext.hpp>
 #include <gl/glm/gtc/matrix_transform.hpp>
 
+std::random_device rd;
+std::mt19937 gen(rd());
+std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+
+// 객체 구조체
+struct Shape {
+    std::vector<float> vertices;
+    std::vector<unsigned int> index;
+    std::vector<float> colors;
+    glm::vec3 position;
+    GLuint VAO, VBO[2], EBO;
+};
+
+Shape robot[7]; // 0 머리, 1 몸통, 2 왼팔, 3 오른팔, 4 왼다리, 5 오른다리, 6 코
+Shape box;
+Shape obstacles[3];
+
+// 애니메이션 및 움직임 관련 변수들
+glm::mat4 lanimation = glm::mat4(1.0f);
+glm::mat4 ranimation = glm::mat4(1.0f);
+glm::mat4 movement = glm::mat4(1.0f);
+glm::mat4 front = glm::mat4(1.0f);
+float robot_speed = 0.05f;
+float wall_size = 3.0f;
+bool movemotion = false;
+bool open = false;
+float open_angle = 0.0f;
+bool jumping = false;
+bool rotate = true;
+
+// 카메라
+struct Camera {
+    glm::vec3 eye;
+    glm::vec3 at;
+    glm::vec3 up;
+} camera = { glm::vec3(0.0f, 0.0f, 8.0f),
+             glm::vec3(0.0f, 0.0f, 0.0f),
+             glm::vec3(0.0f, 1.0f, 0.0f) };
+
+char* filetobuf(const char* file) {
+    FILE* fptr;
+    long length;
+    char* buf;
+    fptr = fopen(file, "rb");
+    if (!fptr) {
+        std::cerr << "파일을 열 수 없습니다: " << file << std::endl;
+        return NULL;
+    }
+    fseek(fptr, 0, SEEK_END);
+    length = ftell(fptr);
+    buf = (char*)malloc(length + 1);
+    fseek(fptr, 0, SEEK_SET);
+    fread(buf, length, 1, fptr);
+    fclose(fptr);
+    buf[length] = 0;
+    return buf;
+}
+
+//--- 함수 선언
 void make_vertexShaders();
 void make_fragmentShaders();
-void make_shaderProgram();
+GLuint make_shaderProgram();
 GLvoid drawScene();
 GLvoid Reshape(int w, int h);
 GLvoid Keyboard(unsigned char key, int x, int y);
-GLvoid SpecialKeys(int key, int x, int y);
-GLvoid Mouse(int button, int state, int x, int y);
-GLvoid Timer(int value);
-GLvoid Motion(int x, int y);
+GLvoid KeyboardUp(unsigned char key, int x, int y);
+void TimerFunction(int value);
+void InitBuffers(Shape& shape);
+void CreateCube(Shape& cube, float x, float y, float z);
 
-GLint width, height;
+float getRandomcolor()
+{
+    std::uniform_real_distribution<float> dis(0.2f, 0.8f);
+    return dis(gen);
+}
+
+// 충돌 검사 함수들
+bool AABB(glm::vec3 pos1, float size1, glm::vec3 pos2, float size2) {
+    return (pos1.x - size1 <= pos2.x + size2 && pos1.x + size1 >= pos2.x - size2 &&
+        pos1.z - size1 <= pos2.z + size2 && pos1.z + size1 >= pos2.z - size2);
+}
+
+bool wall_collision(glm::vec3 pos1, float size1, float size2) {
+    return (pos1.x - size1 <= -size2 || pos1.x + size1 >= size2 ||
+        pos1.z - size1 <= -size2 || pos1.z + size1 >= size2);
+}
+
+// 게임 관련 함수들
+void location();
+void robot_movement();
+void robot_fall();
+void robot_jump();
+void menu();
+bool robot_collision();
+void robot_turn(float angle);
+void CubeFrontOpen();
+
+//--- 필요한 변수 선언
+GLint width = 800, height = 600;
 GLuint shaderProgramID;
 GLuint vertexShader;
 GLuint fragmentShader;
 
-std::random_device rd;
-std::mt19937 gen(rd());
-
-float getRandomcolor()
-{
-	std::uniform_real_distribution<float> dis(0.2f, 0.8f);
-	return dis(gen);
-}
-
-class Shape {
-public:
-	std::vector<float> vertices;
-	std::vector<float> colors;
-	std::vector<int> index;
-	float center[3]{};
-	float size[3]{};
-	float color[3]{};
-	GLuint VAO, VBO[2], EBO;
-	int x_rotate = 0, y_rotate = 0, revolution = 0;
-	float translation[3] = { 0.0f };
-	float x_rotationAngle = { 0.0f };
-	float y_rotationAngle = { 0.0f };
-	float revolutionAngle = { 0.0f };
-
-	// 애니메이션을 위한 추가 변수들
-	float animOffset[3] = { 0.0f }; // 애니메이션 오프셋
-};
-
-// 카메라 클래스 정의
-class Camera {
-public:
-	glm::vec3 eye;    // 카메라 위치
-	glm::vec3 at;     // 카메라가 바라보는 지점
-	glm::vec3 up;     // 업 벡터
-
-	// 애니메이션 제어 변수
-	int x_rotate = 0, y_rotate = 0, revolution = 0;
-	float revolutionAngle = 0.0f;
-	float y_rotationAngle = 0.0f;
-	float x_rotationAngle = 0.0f;
-
-	// 공전 반지름과 초기 설정
-	float revolutionRadius = 3.0f;
-	glm::vec3 initialEye;  // 공전 시작 시의 위치 저장
-	bool isRevolving = false;  // 공전 상태 추가
-
-	Camera() {
-		reset();
-	}
-
-	void reset() {
-		eye = glm::vec3(0.0f, 2.0f, 3.0f);
-		at = glm::vec3(0.0f, 0.0f, 0.0f);
-		up = glm::vec3(0.0f, 1.0f, 0.0f);
-
-		x_rotate = 0;
-		y_rotate = 0;
-		revolution = 0;
-		revolutionAngle = 0.0f;
-		y_rotationAngle = 0.0f;
-		x_rotationAngle = 0.0f;
-		isRevolving = false;
-
-		// 초기 위치에서 공전 반지름 계산
-		glm::vec3 toEye = eye - at;
-		revolutionRadius = glm::length(toEye);
-		initialEye = eye;
-	}
-
-	// View 행렬 생성
-	glm::mat4 getViewMatrix() {
-		glm::vec3 currentEye = eye;
-		glm::vec3 currentAt = at;
-		glm::vec3 currentUp = up;
-
-		// 공전 (원점을 중심으로 카메라가 회전)
-		if (revolutionAngle != 0.0f) {
-			// 공전 시작 시점에서 초기 각도 계산
-			if (!isRevolving) {
-				isRevolving = true;
-				glm::vec3 toEye = eye - at;
-				revolutionRadius = glm::length(toEye);
-				initialEye = eye;
-			}
-
-			// 원점을 중심으로 공전하되, Y 좌표는 초기값 유지
-			float rad = glm::radians(revolutionAngle);
-
-			// 초기 위치에서의 각도 계산
-			glm::vec3 initialDirection = glm::normalize(initialEye - at);
-			float initialAngle = atan2(initialDirection.z, initialDirection.x);
-
-			// 현재 각도 = 초기 각도 + 회전량
-			float currentAngle = initialAngle + rad;
-
-			currentEye.x = at.x + cos(currentAngle) * revolutionRadius;
-			currentEye.z = at.z + sin(currentAngle) * revolutionRadius;
-			currentEye.y = initialEye.y;  // Y 좌표는 초기값 유지
-		}
-		else {
-			isRevolving = false;
-		}
-
-		// Y축 자전 (카메라가 제자리에서 좌우 회전)
-		if (y_rotationAngle != 0.0f) {
-			glm::mat4 rotY = glm::rotate(glm::mat4(1.0f), glm::radians(y_rotationAngle), glm::vec3(0, 1, 0));
-			glm::vec4 newAt = rotY * glm::vec4(currentAt - currentEye, 1.0f);
-			currentAt = currentEye + glm::vec3(newAt);
-		}
-
-		return glm::lookAt(currentEye, currentAt, currentUp);
-	}
-
-	// 카메라 이동
-	void moveX(float delta) {
-		glm::vec3 right = glm::normalize(glm::cross(at - eye, up));
-		eye += right * delta;
-		at += right * delta;
-
-		// 이동 후에는 공전 상태 리셋
-		isRevolving = false;
-		initialEye = eye;
-		glm::vec3 toEye = eye - at;
-		revolutionRadius = glm::length(toEye);
-	}
-
-	void moveZ(float delta) {
-		glm::vec3 forward = glm::normalize(at - eye);
-		eye += forward * delta;
-		at += forward * delta;
-
-		// 이동 후에는 공전 상태 리셋
-		isRevolving = false;
-		initialEye = eye;
-		glm::vec3 toEye = eye - at;
-		revolutionRadius = glm::length(toEye);
-	}
-};
-
-Shape axis;
-Shape ground; // 바닥 추가
-Shape under_body;
-Shape mid_body;
-Shape top_body[2];
-Shape gun_barrel[2];
-Shape flag[2];
-Shape* shapes[8] = { &under_body, &mid_body, &top_body[0], &top_body[1], &gun_barrel[0], &gun_barrel[1], &flag[0], &flag[1] };
-
-GLvoid initBuffer(Shape& shape);
-
-Camera camera;
-bool cameraAnimation = false;
-
-// 상부 몸체 위치 교환을 위한 변수
-bool topBodySwapped = false;
-
-// 애니메이션 관련 변수들
-bool isSwapping = false;
-float swapProgress = 0.0f;
-const float SWAP_DURATION = 1.0f; // 1초간 애니메이션
-float originalPos0X, originalPos1X; // 원래 위치 저장
-
-// 바닥 경계 설정
-const float GROUND_SIZE = 5.0f;
-const float TANK_BOUNDARY = GROUND_SIZE - 0.7f; // 탱크 크기 고려한 경계
-
-// 선형 보간 함수
-float lerp(float a, float b, float t) {
-	return a + t * (b - a);
-}
-
-void createAxis(Shape& shape)
-{
-	shape.vertices = {
-		1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f
-	};
-	shape.colors = {
-		1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
-	};
-	shape.index = {
-		0, 1,
-		2, 3,
-		4, 5
-	};
-	initBuffer(shape);
-}
-
-void createCube(Shape& s)
-{
-	float x1 = s.center[0] - s.size[0];
-	float x2 = s.center[0] + s.size[0];
-	float y1 = s.center[1] - s.size[1];
-	float y2 = s.center[1] + s.size[1];
-	float z1 = s.center[2] - s.size[2];
-	float z2 = s.center[2] + s.size[2];
-
-	s.vertices = {
-		// 앞면 (z2) - 정면을 향하는 면
-		x1, y1, z2,   // 0: 왼쪽 아래
-		x2, y1, z2,   // 1: 오른쪽 아래
-		x2, y2, z2,   // 2: 오른쪽 위
-		x1, y2, z2,   // 3: 왼쪽 위
-
-		// 뒷면 (z1) - 뒤쪽을 향하는 면
-		x2, y1, z1,   // 4: 오른쪽 아래
-		x1, y1, z1,   // 5: 왼쪽 아래
-		x1, y2, z1,   // 6: 왼쪽 위
-		x2, y2, z1,   // 7: 오른쪽 위
-
-		// 오른쪽면 (x2)
-		x2, y1, z2,   // 8: 앞 아래
-		x2, y1, z1,   // 9: 뒤 아래
-		x2, y2, z1,   // 10: 뒤 위
-		x2, y2, z2,   // 11: 앞 위
-
-		// 왼쪽면 (x1)
-		x1, y1, z1,   // 12: 뒤 아래
-		x1, y1, z2,   // 13: 앞 아래
-		x1, y2, z2,   // 14: 앞 위
-		x1, y2, z1,   // 15: 뒤 위
-
-		// 윗면 (y2)
-		x1, y2, z2,   // 16: 앞 왼쪽
-		x2, y2, z2,   // 17: 앞 오른쪽
-		x2, y2, z1,   // 18: 뒤 오른쪽
-		x1, y2, z1,   // 19: 뒤 왼쪽
-
-		// 아랫면 (y1)
-		x1, y1, z1,   // 20: 뒤 왼쪽
-		x2, y1, z1,   // 21: 뒤 오른쪽
-		x2, y1, z2,   // 22: 앞 오른쪽
-		x1, y1, z2    // 23: 앞 왼쪽
-	};
-
-	s.colors = {
-		// 앞면
-		s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],
-		// 뒷면
-		s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],
-		// 오른쪽면
-		s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],
-		// 왼쪽면
-		s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],
-		// 윗면
-		s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],
-		// 아랫면
-		s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2],  s.color[0], s.color[1], s.color[2]
-	};
-
-	// 올바른 와인딩 순서로 인덱스 정의 (반시계 방향)
-	s.index = {
-		// 앞면 (z2)
-		0, 1, 2,  2, 3, 0,
-
-		// 뒷면 (z1)
-		4, 5, 6,  6, 7, 4,
-
-		// 오른쪽면 (x2)
-		8, 9, 10,  10, 11, 8,
-
-		// 왼쪽면 (x1)
-		12, 13, 14,  14, 15, 12,
-
-		// 윗면 (y2)
-		16, 17, 18,  18, 19, 16,
-
-		// 아랫면 (y1)
-		20, 21, 22,  22, 23, 20
-	};
-
-	initBuffer(s);
-}
-
-// 바닥 생성 함수 추가
-void createGround(Shape& shape) {
-	shape.center[0] = 0.0f;
-	shape.center[1] = -0.5f; // 탱크 아래 위치
-	shape.center[2] = 0.0f;
-	shape.size[0] = GROUND_SIZE;
-	shape.size[1] = 0.1f;
-	shape.size[2] = GROUND_SIZE;
-	shape.color[0] = 0.3f;
-	shape.color[1] = 0.7f;
-	shape.color[2] = 0.3f; // 초록색 바닥
-
-	createCube(shape);
-}
-
-// 상부 몸체 위치 교환 애니메이션 시작 함수
-void startSwapAnimation() {
-	if (isSwapping) return; // 이미 애니메이션 중이면 무시
-
-	isSwapping = true;
-	swapProgress = 0.0f;
-
-	// 원래 위치 저장
-	originalPos0X = top_body[0].center[0];
-	originalPos1X = top_body[1].center[0];
-
-	std::cout << "상부 몸체 교환 애니메이션 시작!" << std::endl;
-}
-
-// 상부 몸체 위치 교환 함수 (즉시 실행)
-void swapTopBodies() {
-	topBodySwapped = !topBodySwapped;
-
-	// 상부 몸체 위치 정보 교환
-	float tempX = top_body[0].center[0];
-	top_body[0].center[0] = top_body[1].center[0];
-	top_body[1].center[0] = tempX;
-
-	// 포신 위치도 함께 교환 (상부 몸체를 따라 이동)
-	gun_barrel[0].center[0] = top_body[0].center[0];
-	gun_barrel[1].center[0] = top_body[1].center[0];
-
-	// 깃대 위치도 함께 교환 (상부 몸체를 따라 이동)
-	flag[0].center[0] = top_body[0].center[0];
-	flag[1].center[0] = top_body[1].center[0];
-
-	// 회전 상태도 교환
-	float tempRevolution = gun_barrel[0].revolutionAngle;
-	gun_barrel[0].revolutionAngle = gun_barrel[1].revolutionAngle;
-	gun_barrel[1].revolutionAngle = tempRevolution;
-
-	int tempRevolutionState = gun_barrel[0].revolution;
-	gun_barrel[0].revolution = gun_barrel[1].revolution;
-	gun_barrel[1].revolution = tempRevolutionState;
-
-	// 깃대 회전 상태도 교환
-	tempRevolution = flag[0].revolutionAngle;
-	flag[0].revolutionAngle = flag[1].revolutionAngle;
-	flag[1].revolutionAngle = tempRevolution;
-
-	tempRevolutionState = flag[0].revolution;
-	flag[0].revolution = flag[1].revolution;
-	flag[1].revolution = tempRevolutionState;
-
-	// 버퍼 업데이트
-	createCube(top_body[0]);
-	createCube(top_body[1]);
-	createCube(gun_barrel[0]);
-	createCube(gun_barrel[1]);
-	createCube(flag[0]);
-	createCube(flag[1]);
-}
-
-void reset() {
-	// 모든 탱크 부품의 translation 초기화
-	for (auto& shape : shapes) {
-		shape->translation[0] = 0.0f;
-		shape->translation[1] = 0.0f;
-		shape->translation[2] = 0.0f;
-		shape->x_rotationAngle = 0.0f;
-		shape->y_rotationAngle = 0.0f;
-		shape->revolutionAngle = 0.0f;
-		shape->x_rotate = 0;
-		shape->y_rotate = 0;
-		shape->revolution = 0;
-		shape->animOffset[0] = 0.0f;
-		shape->animOffset[1] = 0.0f;
-		shape->animOffset[2] = 0.0f;
-	}
-
-	// 애니메이션 상태 초기화
-	isSwapping = false;
-	swapProgress = 0.0f;
-
-	// 탱크를 바닥 위에 위치시키기 (겹치지 않도록 약간의 여백 추가)
-	float groundTop = ground.center[1] + ground.size[1];
-
-	under_body.center[0] = 0.0f;
-	under_body.center[1] = groundTop + 0.21f; // 바닥과 약간의 거리
-	under_body.center[2] = 0.0f;
-	under_body.size[0] = 0.5f;
-	under_body.size[1] = 0.2f;
-	under_body.size[2] = 0.3f;
-	under_body.color[0] = getRandomcolor();
-	under_body.color[1] = getRandomcolor();
-	under_body.color[2] = getRandomcolor();
-
-	mid_body.size[0] = 0.3f;
-	mid_body.size[1] = 0.2f;
-	mid_body.size[2] = 0.2f;
-	mid_body.center[0] = 0.0f;
-	mid_body.center[1] = under_body.center[1] + under_body.size[1] + mid_body.size[1] + 0.01f; // 약간의 간격
-	mid_body.center[2] = 0.0f;
-	mid_body.color[0] = getRandomcolor();
-	mid_body.color[1] = getRandomcolor();
-	mid_body.color[2] = getRandomcolor();
-
-	// 상부 몸체 위치 초기화 (교환 상태 리셋)
-	topBodySwapped = false;
-
-	top_body[0].size[0] = 0.15f;
-	top_body[0].size[1] = 0.1f;
-	top_body[0].size[2] = 0.15f;
-	top_body[0].center[0] = -0.2f;
-	top_body[0].center[1] = mid_body.center[1] + mid_body.size[1] + top_body[0].size[1] + 0.01f; // 약간의 간격
-	top_body[0].center[2] = 0.0f;
-
-	top_body[1].size[0] = 0.15f;
-	top_body[1].size[1] = 0.1f;
-	top_body[1].size[2] = 0.15f;
-	top_body[1].center[0] = 0.2f;
-	top_body[1].center[1] = mid_body.center[1] + mid_body.size[1] + top_body[1].size[1] + 0.01f; // 약간의 간격
-	top_body[1].center[2] = 0.0f;
-
-	top_body[0].color[0] = getRandomcolor();
-	top_body[0].color[1] = getRandomcolor();
-	top_body[0].color[2] = getRandomcolor();
-	top_body[1].color[0] = top_body[0].color[0];
-	top_body[1].color[1] = top_body[0].color[1];
-	top_body[1].color[2] = top_body[0].color[2];
-
-	gun_barrel[0].size[0] = 0.05f;
-	gun_barrel[0].size[1] = 0.05f;
-	gun_barrel[0].size[2] = 0.3f;
-	gun_barrel[0].center[0] = top_body[0].center[0];
-	gun_barrel[0].center[1] = top_body[0].center[1];
-	gun_barrel[0].center[2] = top_body[0].center[2] + top_body[0].size[2] + gun_barrel[0].size[2] + 0.01f; // 약간의 간격
-
-	gun_barrel[1].size[0] = 0.05f;
-	gun_barrel[1].size[1] = 0.05f;
-	gun_barrel[1].size[2] = 0.3f;
-	gun_barrel[1].center[0] = top_body[1].center[0];
-	gun_barrel[1].center[1] = top_body[1].center[1];
-	gun_barrel[1].center[2] = top_body[1].center[2] + top_body[1].size[2] + gun_barrel[1].size[2] + 0.01f; // 약간의 간격
-
-	gun_barrel[0].color[0] = getRandomcolor();
-	gun_barrel[0].color[1] = getRandomcolor();
-	gun_barrel[0].color[2] = getRandomcolor();
-	gun_barrel[1].color[0] = gun_barrel[0].color[0];
-	gun_barrel[1].color[1] = gun_barrel[0].color[1];
-	gun_barrel[1].color[2] = gun_barrel[0].color[2];
-
-	flag[0].size[0] = 0.01f;
-	flag[0].size[1] = 0.2f;
-	flag[0].size[2] = 0.01f;
-	flag[0].center[0] = top_body[0].center[0];
-	flag[0].center[1] = top_body[0].center[1] + top_body[0].size[1] + flag[0].size[1] + 0.01f; // 약간의 간격
-	flag[0].center[2] = top_body[0].center[2];
-
-	flag[1].size[0] = 0.01f;
-	flag[1].size[1] = 0.2f;
-	flag[1].size[2] = 0.01f;
-	flag[1].center[0] = top_body[1].center[0];
-	flag[1].center[1] = top_body[1].center[1] + top_body[1].size[1] + flag[1].size[1] + 0.01f; // 약간의 간격
-	flag[1].center[2] = top_body[1].center[2];
-
-	flag[0].color[0] = getRandomcolor();
-	flag[0].color[1] = getRandomcolor();
-	flag[0].color[2] = getRandomcolor();
-	flag[1].color[0] = flag[0].color[0];
-	flag[1].color[1] = flag[0].color[1];
-	flag[1].color[2] = flag[0].color[2];
-
-	createCube(under_body);
-	createCube(mid_body);
-	createCube(top_body[0]);
-	createCube(top_body[1]);
-	createCube(gun_barrel[0]);
-	createCube(gun_barrel[1]);
-	createCube(flag[0]);
-	createCube(flag[1]);
-}
-
-void rotate_Matrix(glm::mat4& matrix, glm::vec3 pre_trans, float angle, glm::vec3 rotate)
-{
-	matrix = glm::translate(matrix, pre_trans);
-	matrix = glm::rotate(matrix, glm::radians(angle), rotate);
-	matrix = glm::translate(matrix, -pre_trans);
-}
-
-void scale_Matrix(glm::mat4& matrix, glm::vec3 pre_trans, glm::vec3 scale)
-{
-	matrix = glm::translate(matrix, pre_trans);
-	matrix = glm::scale(matrix, scale);
-	matrix = glm::translate(matrix, -pre_trans);
-}
-
-void addint(int& value) {
-	if (value == 0)
-		value = 1;
-	else
-		value = 0;
-}
-void subint(int& value) {
-	if (value == 0)
-		value = -1;
-	else
-		value = 0;
-}
-
-// 포신이 바깥쪽으로 회전하는지 확인하는 함수
-bool isGunBarrelOutwardRotation(int gunIndex) {
-	// 현재 상부 몸체의 실제 X 위치 (애니메이션 오프셋 포함)
-	float currentTopBodyX = (gunIndex == 0) ?
-		(top_body[0].center[0] + top_body[0].animOffset[0]) :
-		(top_body[1].center[0] + top_body[1].animOffset[0]);
-
-	// 왼쪽에 있는 포신 (X < 0)은 왼쪽으로만(음의 방향), 
-	// 오른쪽에 있는 포신 (X > 0)은 오른쪽으로만(양의 방향) 회전
-	if (currentTopBodyX < 0) {
-		// 왼쪽 포신: 음의 회전만 허용 (바깥쪽)
-		return gun_barrel[gunIndex].revolutionAngle <= 0;
-	}
-	else {
-		// 오른쪽 포신: 양의 회전만 허용 (바깥쪽)
-		return gun_barrel[gunIndex].revolutionAngle >= 0;
-	}
-}
-
-// 포신 회전 방향 결정 함수
-void rotateGunBarrelOutward(int gunIndex) {
-	// 현재 상부 몸체의 실제 X 위치 (애니메이션 오프셋 포함)
-	float currentTopBodyX = (gunIndex == 0) ?
-		(top_body[0].center[0] + top_body[0].animOffset[0]) :
-		(top_body[1].center[0] + top_body[1].animOffset[0]);
-
-	if (currentTopBodyX < 0) {
-		// 왼쪽 포신: 바깥쪽(왼쪽, 음의 방향)으로 회전
-		subint(gun_barrel[gunIndex].revolution);
-	}
-	else {
-		// 오른쪽 포신: 바깥쪽(오른쪽, 양의 방향)으로 회전  
-		addint(gun_barrel[gunIndex].revolution);
-	}
-}
-
+//--- 메인 함수
 void main(int argc, char** argv)
 {
-	width = 500;
-	height = 500;
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
-	glutInitWindowPosition(100, 100);
-	glutInitWindowSize(width, height);
-	glutCreateWindow("Tank Animation");
-	glewExperimental = GL_TRUE;
-	glewInit();
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
+    glutInitWindowPosition(100, 100);
+    glutInitWindowSize(width, height);
+    glutCreateWindow("Example22");
 
-	// 깊이 테스트 활성화
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+    glewExperimental = GL_TRUE;
+    if (glewInit() != GLEW_OK) {
+        std::cerr << "GLEW 초기화 실패!" << std::endl;
+        exit(1);
+    }
 
-	// 면 제거 활성화 (겹침 문제 해결)
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);
+    make_vertexShaders();
+    make_fragmentShaders();
+    shaderProgramID = make_shaderProgram();
 
-	// 셰이더 프로그램 먼저 생성
-	make_shaderProgram();
+    menu();
 
-	createAxis(axis);
-	createGround(ground); // 바닥 생성
+    // 상자 생성
+    CreateCube(box, wall_size, wall_size, wall_size);
 
-	std::cout << "=== 조작법 ===" << std::endl;
-	std::cout << "←/↑/→/↓: 탱크가 xz평면에서 x축과 z축 방향으로 이동한다." << std::endl;
-	std::cout << "t: 중앙몸체가 y축에 대하여 회전한다." << std::endl;
-	std::cout << "l: 상부몸체가 이동하여 서로 위치를 바꾼다 (애니메이션)." << std::endl;
-	std::cout << "g: 상부몸체 앞의 포신이 바깥쪽으로만 y축 회전한다." << std::endl;
-	std::cout << "p: 상부몸체 위의 깃대가 x축에 대하여 회전한다. 양쪽의 깃대는 서로 반대방향으로 회전한다." << std::endl;
-	std::cout << "=== 카메라 변환 ===" << std::endl;
-	std::cout << "z/Z: 카메라가 z축 양/음방향으로 이동" << std::endl;
-	std::cout << "x/X: 카메라가 x축 양/음방향으로 이동" << std::endl;
-	std::cout << "y/Y: 카메라기준 y축에 대하여 회전(카메라가 제자리에서 자전)" << std::endl;
-	std::cout << "r/R: 화면의 중심의 y축에 대하여 카메라가 회전(중점에 대하여 공전)" << std::endl;
-	std::cout << "a: 카메라 공전 애니메이션" << std::endl;
-	std::cout << "o: 모든 움직임 멈추기" << std::endl;
-	std::cout << "c: 모든 움직임이 초기화된다." << std::endl;
-	std::cout << "q: 프로그램 종료하기" << std::endl;
+    // 장애물 생성
+    for (int i = 0; i < 3; i++) {
+        CreateCube(obstacles[i], 0.5f, 0.5f, 0.5f);
+    }
 
-	camera.reset();
-	reset(); // 초기 도형 상태 설정
+    // 로봇 생성
+    CreateCube(robot[0], 0.2f, 0.2f, 0.1f); // 머리
+    CreateCube(robot[1], 0.2f, 0.4f, 0.1f); // 몸통
+    CreateCube(robot[2], 0.05f, 0.3f, 0.05f); // 왼팔
+    CreateCube(robot[3], 0.05f, 0.3f, 0.05f); // 오른팔
+    CreateCube(robot[4], 0.05f, 0.3f, 0.05f); // 왼다리
+    CreateCube(robot[5], 0.05f, 0.3f, 0.05f); // 오른다리
+    CreateCube(robot[6], 0.03f, 0.05f, 0.03f); // 코
 
-	glutDisplayFunc(drawScene);
-	glutReshapeFunc(Reshape);
-	glutKeyboardFunc(Keyboard);
-	glutSpecialFunc(SpecialKeys);
-	glutTimerFunc(16, Timer, 0);
-	glutMainLoop();
+    location();
+
+    glutTimerFunc(50, TimerFunction, 1);
+    glutDisplayFunc(drawScene);
+    glutReshapeFunc(Reshape);
+    glutKeyboardFunc(Keyboard);
+    glutKeyboardUpFunc(KeyboardUp);
+    glutMainLoop();
 }
 
-char* filetobuf(const char* file)
-{
-	FILE* fptr;
-	long length;
-	char* buf;
-	fptr = fopen(file, "rb");
-	if (!fptr)
-		return NULL;
-	fseek(fptr, 0, SEEK_END);
-	length = ftell(fptr);
-	buf = (char*)malloc(length + 1);
-	fseek(fptr, 0, SEEK_SET);
-	fread(buf, length, 1, fptr);
-	fclose(fptr);
-	buf[length] = 0;
-	return buf;
+void menu() {
+    std::cout << "========== 조작법 ==========" << std::endl;
+    std::cout << "o: 앞면이 열렸다 닫혔다" << std::endl;
+    std::cout << "w/a/s/d: 로봇 이동" << std::endl;
+    std::cout << "+/-: 로봇 속도 조절" << std::endl;
+    std::cout << "j: 로봇 점프" << std::endl;
+    std::cout << "i: 초기화" << std::endl;
+    std::cout << "z/Z: 카메라 z축 이동" << std::endl;
+    std::cout << "x/X: 카메라 x축 이동" << std::endl;
+    std::cout << "y/Y: 카메라 y축 공전" << std::endl;
+    std::cout << "q: 종료" << std::endl;
+    std::cout << "============================" << std::endl;
 }
 
-void make_vertexShaders()
-{
-	GLchar* vertexSource;
-	vertexSource = filetobuf("vertex_3d.glsl");
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexSource, NULL);
-	glCompileShader(vertexShader);
-	GLint result;
-	GLchar errorLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
-	if (!result)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, errorLog);
-		std::cerr << "ERROR: vertex shader 컴파일 실패\n" << errorLog << std::endl;
-		return;
-	}
+void CreateCube(Shape& cube, float x, float y, float z) {
+    cube.vertices = {
+        // 앞면
+       -x, y, z,  -x, -y, z,  x, -y, z,  x, y, z,
+       // 뒷면
+       -x, -y, -z, -x, y, -z, x, y, -z,  x, -y, -z,
+       // 윗면
+       -x, y, -z,  -x, y, z,  x, y, z,   x, y, -z,
+       // 아래면 
+       -x, -y, z,  -x, -y, -z, x, -y, -z, x, -y, z,
+       // 왼면 
+       -x, y, -z,  -x, -y, -z, -x, -y, z, -x, y, z,
+       // 오른면
+       x, y, z,    x, -y, z,   x, -y, -z,  x, y, -z
+    };
+
+    cube.index = {
+        // 앞면
+        0, 1, 2, 0, 2, 3,
+        // 뒷면
+        4, 5, 6, 4, 6, 7,
+        // 윗면
+        8, 9, 10, 8, 10, 11,
+        // 아래면
+        12, 13, 14, 12, 14, 15,
+        // 왼면
+        16, 17, 18, 16, 18, 19,
+        // 오른면
+        20, 21, 22, 20, 22, 23
+    };
+
+    // 색상 설정 (회색 계열)
+    cube.colors.clear();
+    for (int face = 0; face < 6; face++) {
+        for (int vertex = 0; vertex < 4; vertex++) {
+            cube.colors.push_back(getRandomcolor());
+            cube.colors.push_back(getRandomcolor());
+            cube.colors.push_back(getRandomcolor());
+        }
+    }
+
+    InitBuffers(cube);
 }
 
-void make_fragmentShaders()
-{
-	GLchar* fragmentSource;
-	fragmentSource = filetobuf("fragment_3d.glsl");
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
-	glCompileShader(fragmentShader);
-	GLint result;
-	GLchar errorLog[512];
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
-	if (!result)
-	{
-		glGetShaderInfoLog(fragmentShader, 512, NULL, errorLog);
-		std::cerr << "ERROR: frag_shader 컴파일 실패\n" << errorLog << std::endl;
-		return;
-	}
+void CubeFrontOpen() {
+    const float rotation_speed = 2.0f;
+    const float max_angle = 90.0f;
+
+    if (open_angle < max_angle) {
+        glm::mat4 translateToOrigin = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -wall_size, -wall_size));
+        glm::mat4 rotMat = glm::rotate(glm::mat4(1.0f), glm::radians(-rotation_speed), glm::vec3(1.0f, 0.0f, 0.0f));
+        glm::mat4 translateBack = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, wall_size, wall_size));
+        front = translateBack * rotMat * translateToOrigin * front;
+        open_angle += rotation_speed;
+    }
+    else {
+        open = false;
+        open_angle = max_angle;
+    }
 }
 
-void make_shaderProgram()
-{
-	make_vertexShaders();
-	make_fragmentShaders();
+void location() {
+    // 로봇 파츠 위치 설정
+    robot[0].position = glm::vec3(0.0f, 1.35f, 0.0f);
+    robot[1].position = glm::vec3(0.0f, 0.85f, 0.0f);
+    robot[2].position = glm::vec3(-0.25f, 0.95f, 0.0f);
+    robot[3].position = glm::vec3(0.25f, 0.95f, 0.0f);
+    robot[4].position = glm::vec3(-0.1f, 0.3f, 0.0f);
+    robot[5].position = glm::vec3(0.1f, 0.3f, 0.0f);
+    robot[6].position = glm::vec3(0.0f, 1.3f, 0.1f);
 
-	shaderProgramID = glCreateProgram();
+    // 로봇 색상 설정
+    const glm::vec3 colors[7] = {
+        glm::vec3(getRandomcolor(), getRandomcolor(), getRandomcolor()),
+        glm::vec3(getRandomcolor(), getRandomcolor(), getRandomcolor()),
+        glm::vec3(getRandomcolor(), getRandomcolor(), getRandomcolor()),
+        glm::vec3(getRandomcolor(), getRandomcolor(), getRandomcolor()),
+        glm::vec3(getRandomcolor(), getRandomcolor(), getRandomcolor()),
+        glm::vec3(getRandomcolor(), getRandomcolor(), getRandomcolor()),
+        glm::vec3(getRandomcolor(), getRandomcolor(), getRandomcolor())
+    };
 
-	glAttachShader(shaderProgramID, vertexShader);
-	glAttachShader(shaderProgramID, fragmentShader);
-	glLinkProgram(shaderProgramID);
+    for (int i = 0; i < 7; i++) {
+        robot[i].colors.clear();
+        size_t vertexCount = robot[i].vertices.size() / 3;
+        for (size_t j = 0; j < vertexCount; j++) {
+            robot[i].colors.push_back(colors[i].r);
+            robot[i].colors.push_back(colors[i].g);
+            robot[i].colors.push_back(colors[i].b);
+        }
+        InitBuffers(robot[i]);
+    }
 
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-	glUseProgram(shaderProgramID);
+    // 장애물 위치 설정
+    obstacles[0].position = glm::vec3(-1.0f, -2.5f, 1.0f);
+    obstacles[1].position = glm::vec3(0.0f, -2.5f, 2.0f);
+    obstacles[2].position = glm::vec3(1.0f, -2.5f, -1.5f);
 }
 
-GLvoid initBuffer(Shape& shape)
-{
-	glGenVertexArrays(1, &shape.VAO);
-	glBindVertexArray(shape.VAO);
-	glGenBuffers(2, shape.VBO);
-	glGenBuffers(1, &shape.EBO);
+float leftArmAngle = 0.0f;
+float rightArmAngle = 0.0f; 
+float leftLegAngle = 0.0f;
+float rightLegAngle = 0.0f;
+bool armIncreasing = true;
 
-	glBindBuffer(GL_ARRAY_BUFFER, shape.VBO[0]);
-	glBufferData(GL_ARRAY_BUFFER, shape.vertices.size() * sizeof(float), shape.vertices.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(0);
+void robot_movement() {
+    const float max_angle = 20.0f;
+    const float angle_increment = 2.0f;
 
-	glBindBuffer(GL_ARRAY_BUFFER, shape.VBO[1]);
-	glBufferData(GL_ARRAY_BUFFER, shape.colors.size() * sizeof(float), shape.colors.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(1);
+    if (armIncreasing) {
+        leftArmAngle += angle_increment;
+        rightArmAngle -= angle_increment;
+        leftLegAngle -= angle_increment;  // 팔과 반대
+        rightLegAngle += angle_increment; // 팔과 반대
+        
+        if (leftArmAngle >= max_angle) {
+            armIncreasing = false;
+        }
+    } else {
+        leftArmAngle -= angle_increment;
+        rightArmAngle += angle_increment;
+        leftLegAngle += angle_increment;  // 팔과 반대
+        rightLegAngle -= angle_increment; // 팔과 반대
+        
+        if (leftArmAngle <= -max_angle) {
+            armIncreasing = true;
+        }
+    }
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape.EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape.index.size() * sizeof(unsigned int), shape.index.data(), GL_STATIC_DRAW);
+    // 어깨 기준 회전 행렬 계산 (팔의 길이 0.3f의 절반인 0.15f를 위쪽 기준점으로 사용)
+    glm::mat4 shoulderPivot = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.3f, 0.0f));
+    glm::mat4 shoulderPivotBack = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.3f, 0.0f));
+    
+    // 골반 기준 회전 행렬 계산 (다리의 길이 0.3f의 절반인 0.15f를 위쪽 기준점으로 사용)
+    glm::mat4 hipPivot = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.3f, 0.0f));
+    glm::mat4 hipPivotBack = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.3f, 0.0f));
+    
+    // 팔 애니메이션 행렬
+    lanimation = shoulderPivotBack * glm::rotate(glm::mat4(1.0f), glm::radians(leftArmAngle), glm::vec3(1.0f, 0.0f, 0.0f)) * shoulderPivot;  // 왼팔
+    ranimation = shoulderPivotBack * glm::rotate(glm::mat4(1.0f), glm::radians(rightArmAngle), glm::vec3(1.0f, 0.0f, 0.0f)) * shoulderPivot; // 오른팔
 }
 
-GLvoid drawScene()
-{
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(shaderProgramID);
+void robot_jump() {
+    static float jump_height = 0.0f;
+    const float jump_speed = 0.1f;
+    const float max_jump_height = 2.0f;
 
-	// 새로운 카메라 시스템 사용
-	glm::mat4 view = camera.getViewMatrix();
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+    if (jumping) {
+        jump_height += jump_speed;
+        for (int i = 0; i < 7; i++) {
+            robot[i].position.y += jump_speed;
+        }
 
-	// 기본 회전은 제거하거나 최소화
-	glm::mat4 baseRotation = glm::mat4(1.0f);
-
-	unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "Matrix");
-
-	// 축 그리기
-	glm::mat4 axisMatrix = projection * view * baseRotation;
-	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(axisMatrix));
-	glBindVertexArray(axis.VAO);
-	glDrawElements(GL_LINES, axis.index.size(), GL_UNSIGNED_INT, 0);
-
-	// 바닥 그리기
-	glm::mat4 groundMatrix = baseRotation;
-	glm::mat4 finalGroundMatrix = projection * view * groundMatrix;
-	glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(finalGroundMatrix));
-	glBindVertexArray(ground.VAO);
-	glDrawElements(GL_TRIANGLES, ground.index.size(), GL_UNSIGNED_INT, 0);
-
-	for (auto& shape : shapes) {
-		glm::mat4 modelMatrix = baseRotation;
-
-		// 기본 이동 변환 (애니메이션 오프셋 포함)
-		modelMatrix = glm::translate(modelMatrix, glm::vec3(
-			shape->translation[0] + shape->animOffset[0],
-			shape->translation[1] + shape->animOffset[1],
-			shape->translation[2] + shape->animOffset[2]
-		));
-
-		glm::mat4 finalMatrix = projection * view * modelMatrix;
-		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(finalMatrix));
-		glBindVertexArray(shape->VAO);
-		glDrawElements(GL_TRIANGLES, shape->index.size(), GL_UNSIGNED_INT, 0);
-	}
-
-	glutSwapBuffers();
+        if (jump_height >= max_jump_height) {
+            jump_height = 0.0f;
+            jumping = false;
+        }
+    }
 }
 
-GLvoid Reshape(int w, int h)
-{
-	glViewport(0, 0, w, h);
-	width = w;
-	height = h;
-}
-GLvoid Keyboard(unsigned char key, int x, int y)
-{
-	switch (key) {
-	case 'z': // 카메라 z축 양방향 이동
-		camera.moveZ(0.1f);
-		break;
-	case 'Z': // 카메라 z축 음방향 이동
-		camera.moveZ(-0.1f);
-		break;
-	case 'x': // 카메라 x축 양방향 이동
-		camera.moveX(0.1f);
-		break;
-	case 'X': // 카메라 x축 음방향 이동
-		camera.moveX(-0.1f);
-		break;
-	case 'y': // 카메라 자전 (Y축 양방향)
-		addint(camera.revolution);
-		break;
-	case 'Y': // 카메라 자전 (Y축 음방향)
-		subint(camera.revolution);
-		break;
-	case 'q': // 프로그램 종료
-		glutLeaveMainLoop();
-		break;
-	}
-	glutPostRedisplay();
+void robot_fall() {
+    if (jumping) return;
+
+    glm::vec3 robot_pos = glm::vec3(movement[3][0], movement[3][1], movement[3][2]);
+    float robot_bottom_y = robot[4].position.y - 0.3f;
+    const float fall_speed = 0.1f;
+    const float ground_level = -wall_size;
+
+    bool on_obstacle = false;
+    for (int i = 0; i < 3; i++) {
+        if (AABB(robot_pos, 0.2f, obstacles[i].position, 0.5f)) {
+            float obstacle_top = obstacles[i].position.y + 0.5f;
+            if (robot_bottom_y <= obstacle_top + 0.1f && robot_bottom_y >= obstacle_top - 0.1f) {
+                on_obstacle = true;
+                break;
+            }
+        }
+    }
+
+    if (!on_obstacle && robot_bottom_y > ground_level) {
+        for (int i = 0; i < 7; i++) {
+            robot[i].position.y -= fall_speed;
+        }
+    }
 }
 
-GLvoid SpecialKeys(int key, int x, int y)
-{
-	switch (key) {
-	}
-	glutPostRedisplay();
+bool robot_collision() {
+    glm::vec3 current_pos = glm::vec3(movement[3][0], movement[3][1], movement[3][2]);
+    glm::vec3 movement_dir = glm::mat3(movement) * glm::vec3(0.0f, 0.0f, robot_speed);
+    glm::vec3 next_pos = current_pos + movement_dir;
+
+    if (wall_collision(next_pos, 0.2f, wall_size)) {
+        return false;
+    }
+
+    for (int i = 0; i < 3; i++) {
+        float robot_bottom = robot[4].position.y - 0.3f;
+        float obstacle_top = obstacles[i].position.y + 0.5f;
+        bool is_above_obstacle = robot_bottom >= obstacle_top;
+
+        if (!is_above_obstacle && AABB(next_pos, 0.2f, obstacles[i].position, 0.5f)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
-// Timer 함수에 애니메이션 업데이트 추가
-GLvoid Timer(int value)
-{
+void robot_turn(float turn_angle) {
+    glm::vec3 robot_pos = glm::vec3(movement[3][0], movement[3][1], movement[3][2]);
+    movement = glm::translate(glm::mat4(1.0f), robot_pos) *
+        glm::rotate(glm::mat4(1.0f), glm::radians(turn_angle), glm::vec3(0.0f, 1.0f, 0.0f));
+}
 
-	// 카메라 애니메이션
-	if (camera.x_rotate != 0) {
-		camera.x_rotationAngle += 2.0f * camera.x_rotate;
-		if (camera.x_rotationAngle >= 360.0f)
-			camera.x_rotationAngle -= 360.0f;
-		else if (camera.x_rotationAngle < 0.0f)
-			camera.x_rotationAngle += 360.0f;
-	}
-	if (camera.y_rotate != 0) {
-		camera.y_rotationAngle += 2.0f * camera.y_rotate;
-		if (camera.y_rotationAngle >= 360.0f)
-			camera.y_rotationAngle -= 360.0f;
-		else if (camera.y_rotationAngle < 0.0f)
-			camera.y_rotationAngle += 360.0f;
-	}
-	if (camera.revolution != 0) {
-		camera.revolutionAngle += 1.0f * camera.revolution; // 카메라 공전은 조금 더 천천히
-		if (camera.revolutionAngle >= 360.0f)
-			camera.revolutionAngle -= 360.0f;
-		else if (camera.revolutionAngle < 0.0f)
-			camera.revolutionAngle += 360.0f;
-	}
+GLvoid InitBuffers(Shape& shape) {
+    glGenVertexArrays(1, &shape.VAO);
+    glBindVertexArray(shape.VAO);
 
-	glutPostRedisplay();
-	glutTimerFunc(16, Timer, 0);
+    glGenBuffers(2, shape.VBO);
+
+    // 버텍스 데이터
+    glBindBuffer(GL_ARRAY_BUFFER, shape.VBO[0]);
+    glBufferData(GL_ARRAY_BUFFER, shape.vertices.size() * sizeof(float), shape.vertices.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // 색상 데이터
+    glBindBuffer(GL_ARRAY_BUFFER, shape.VBO[1]);
+    glBufferData(GL_ARRAY_BUFFER, shape.colors.size() * sizeof(float), shape.colors.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+
+    // 인덱스 데이터
+    glGenBuffers(1, &shape.EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shape.EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape.index.size() * sizeof(unsigned int), shape.index.data(), GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
+}
+
+void make_vertexShaders() {
+    GLchar* vertexSource = filetobuf("vertex_3d.glsl");
+    if (!vertexSource) {
+        std::cerr << "버텍스 셰이더 파일을 읽을 수 없습니다." << std::endl;
+        return;
+    }
+
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexSource, NULL);
+    glCompileShader(vertexShader);
+
+    GLint result;
+    GLchar errorLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
+    if (!result) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, errorLog);
+        std::cerr << "ERROR: vertex shader 컴파일 실패\n" << errorLog << std::endl;
+    }
+
+    free(vertexSource);
+}
+
+void make_fragmentShaders() {
+    GLchar* fragmentSource = filetobuf("fragment_3d.glsl");
+    if (!fragmentSource) {
+        std::cerr << "프래그먼트 셰이더 파일을 읽을 수 없습니다." << std::endl;
+        return;
+    }
+
+    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
+    glCompileShader(fragmentShader);
+
+    GLint result;
+    GLchar errorLog[512];
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
+    if (!result) {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, errorLog);
+        std::cerr << "ERROR: fragment shader 컴파일 실패\n" << errorLog << std::endl;
+    }
+
+    free(fragmentSource);
+}
+
+GLuint make_shaderProgram() {
+    GLuint shaderID = glCreateProgram();
+
+    glAttachShader(shaderID, vertexShader);
+    glAttachShader(shaderID, fragmentShader);
+    glLinkProgram(shaderID);
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    GLint result;
+    GLchar errorLog[512];
+    glGetProgramiv(shaderID, GL_LINK_STATUS, &result);
+    if (!result) {
+        glGetProgramInfoLog(shaderID, 512, NULL, errorLog);
+        std::cerr << "ERROR: shader program 링크 실패\n" << errorLog << std::endl;
+        exit(1);
+    }
+
+    glUseProgram(shaderID);
+    return shaderID;
+}
+
+GLvoid drawScene() {
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glUseProgram(shaderProgramID);
+
+    // 변환 행렬 계산
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+    glm::mat4 view = glm::lookAt(camera.eye, camera.at, camera.up);
+
+    // Matrix 유니폼 위치 가져오기
+    unsigned int matrixLocation = glGetUniformLocation(shaderProgramID, "Matrix");
+
+    // 메인 상자 그리기
+    glBindVertexArray(box.VAO);
+    if (open && open_angle < 90.0f) {
+        for (int i = 0; i < 6; i++) {
+            glm::mat4 model = (i == 0) ? front : glm::mat4(1.0f);
+            glm::mat4 mvp = projection * view * model;
+            glUniformMatrix4fv(matrixLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(i * 6 * sizeof(unsigned int)));
+        }
+    }
+    else {
+        if (open_angle >= 90.0f) {
+            glEnable(GL_CULL_FACE);
+            glFrontFace(GL_CW);
+        }
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 mvp = projection * view * model;
+        glUniformMatrix4fv(matrixLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+        glDrawElements(GL_TRIANGLES, box.index.size(), GL_UNSIGNED_INT, 0);
+        glDisable(GL_CULL_FACE);
+        glFrontFace(GL_CCW);
+    }
+
+    // 로봇 그리기
+    for (int i = 0; i < 7; i++) {
+        glm::mat4 model = movement * glm::translate(glm::mat4(1.0f), robot[i].position);
+
+        if (i == 2) {          // 왼팔
+            model = model * lanimation;
+        }
+        else if (i == 3) {     // 오른팔  
+            model = model * ranimation;
+        }
+        else if (i == 4) {     // 왼다리
+            glm::mat4 hipPivot = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.3f, 0.0f));
+            glm::mat4 hipPivotBack = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.3f, 0.0f));
+            glm::mat4 leftLegTransform = hipPivotBack * glm::rotate(glm::mat4(1.0f), glm::radians(leftLegAngle), glm::vec3(1.0f, 0.0f, 0.0f)) * hipPivot;
+            model = model * leftLegTransform;
+        }
+        else if (i == 5) {     // 오른다리
+            glm::mat4 hipPivot = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.3f, 0.0f));
+            glm::mat4 hipPivotBack = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.3f, 0.0f));
+            glm::mat4 rightLegTransform = hipPivotBack * glm::rotate(glm::mat4(1.0f), glm::radians(rightLegAngle), glm::vec3(1.0f, 0.0f, 0.0f)) * hipPivot;
+            model = model * rightLegTransform;
+        }
+
+        glm::mat4 mvp = projection * view * model;
+        glUniformMatrix4fv(matrixLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+        glBindVertexArray(robot[i].VAO);
+        glDrawElements(GL_TRIANGLES, robot[i].index.size(), GL_UNSIGNED_INT, 0);
+    }
+
+    // 장애물 그리기
+    for (int i = 0; i < 3; i++) {
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), obstacles[i].position);
+        glm::mat4 mvp = projection * view * model;
+        glUniformMatrix4fv(matrixLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+        glBindVertexArray(obstacles[i].VAO);
+        glDrawElements(GL_TRIANGLES, obstacles[i].index.size(), GL_UNSIGNED_INT, 0);
+    }
+
+    glutSwapBuffers();
+}
+
+GLvoid Reshape(int w, int h) {
+    glViewport(0, 0, w, h);
+    width = w;
+    height = h;
+}
+
+GLvoid Keyboard(unsigned char key, int x, int y) {
+    switch (key) {
+    case 'o':
+        open = true;
+        break;
+    case 'z':
+        camera.eye.z -= 0.1f;
+        break;
+    case 'Z':
+        camera.eye.z += 0.1f;
+        break;
+    case 'x':
+        camera.eye.x += 0.1f;
+        break;
+    case 'X':
+        camera.eye.x -= 0.1f;
+        break;
+    case 'y':
+    case 'Y': {
+        float rotation_angle = (key == 'y') ? 5.0f : -5.0f;
+        float angle = glm::radians(rotation_angle);
+        float cos_angle = cos(angle);
+        float sin_angle = sin(angle);
+        float new_eye_x = camera.eye.x * cos_angle - camera.eye.z * sin_angle;
+        float new_eye_z = camera.eye.x * sin_angle + camera.eye.z * cos_angle;
+        camera.eye.x = new_eye_x;
+        camera.eye.z = new_eye_z;
+        break;
+    }
+    case 'w':
+        if (rotate) {
+            robot_turn(180.0f);
+            rotate = false;
+        }
+        if (robot_collision()) {
+            movement = glm::translate(movement, glm::vec3(0.0f, 0.0f, robot_speed));
+            movemotion = true;
+        }
+        break;
+    case 's':
+        if (rotate) {
+            robot_turn(0.0f);
+            rotate = false;
+        }
+        if (robot_collision()) {
+            movement = glm::translate(movement, glm::vec3(0.0f, 0.0f, robot_speed));
+            movemotion = true;
+        }
+        break;
+    case 'a':
+        if (rotate) {
+            robot_turn(-90.0f);
+            rotate = false;
+        }
+        if (robot_collision()) {
+            movement = glm::translate(movement, glm::vec3(0.0f, 0.0f, robot_speed));
+            movemotion = true;
+        }
+        break;
+    case 'd':
+        if (rotate) {
+            robot_turn(90.0f);
+            rotate = false;
+        }
+        if (robot_collision()) {
+            movement = glm::translate(movement, glm::vec3(0.0f, 0.0f, robot_speed));
+            movemotion = true;
+        }
+        break;
+    case '+':
+        robot_speed = std::min(robot_speed + 0.01f, 0.2f);
+        std::cout << "Robot speed: " << robot_speed << std::endl;
+        break;
+    case '-':
+        robot_speed = std::max(robot_speed - 0.01f, 0.01f);
+        std::cout << "Robot speed: " << robot_speed << std::endl;
+        break;
+    case 'j':
+        if (!jumping) jumping = true;
+        break;
+    case 'i':
+        // 초기화
+        location();
+        movement = glm::mat4(1.0f);
+        lanimation = glm::mat4(1.0f);
+        ranimation = glm::mat4(1.0f);
+        front = glm::mat4(1.0f);
+        movemotion = false;
+        open = false;
+        open_angle = 0.0f;
+        jumping = false;
+        rotate = true;
+        
+        // 팔다리 각도 초기화
+        leftArmAngle = 0.0f;
+        rightArmAngle = 0.0f;
+        leftLegAngle = 0.0f;
+        rightLegAngle = 0.0f;
+        armIncreasing = true;
+        
+        camera.eye = glm::vec3(0.0f, 0.0f, 10.0f);
+        camera.at = glm::vec3(0.0f, 0.0f, 0.0f);
+        camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
+        break;
+    case 'q':
+        exit(0);
+        break;
+    }
+    glutPostRedisplay();
+}
+
+GLvoid KeyboardUp(unsigned char key, int x, int y) {
+    switch (key) {
+    case 'w':
+    case 'a':
+    case 's':
+    case 'd':
+        rotate = true;
+        movemotion = false;
+        // 각도 변수들은 초기화하지 않음 - 애니메이션을 유지하기 위해
+        // lanimation과 ranimation도 초기화하지 않음
+        break;
+    }
+    glutPostRedisplay();
+}
+
+void TimerFunction(int value) {
+    if (movemotion) robot_movement();
+    if (open) CubeFrontOpen();
+    if (!jumping) robot_fall();
+    else robot_jump();
+
+    glutPostRedisplay();
+    glutTimerFunc(50, TimerFunction, 1);
 }

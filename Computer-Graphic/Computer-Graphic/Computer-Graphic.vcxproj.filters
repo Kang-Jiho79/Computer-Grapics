@@ -96,5 +96,14 @@
     <ClCompile Include="23.cpp">
       <Filter>소스 파일\OpenGL cordinate transformation</Filter>
     </ClCompile>
+    <ClCompile Include="25.cpp">
+      <Filter>소스 파일\OpenGL cordinate transformation</Filter>
+    </ClCompile>
+    <ClCompile Include="26.cpp">
+      <Filter>소스 파일\OpenGL cordinate transformation</Filter>
+    </ClCompile>
+    <ClCompile Include="27.cpp">
+      <Filter>소스 파일\OpenGL cordinate transformation</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
